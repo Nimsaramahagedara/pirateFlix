@@ -1,0 +1,9 @@
+﻿*.exe
+server.exe
+server-linux
+.git
+.idea
+.vscode
+docker-compose.yml
+Dockerfile
+.dockerignore

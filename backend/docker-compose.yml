@@ -1,0 +1,15 @@
+services:
+  movie-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: movie-backend:latest
+    container_name: movie-backend
+    restart: unless-stopped
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080

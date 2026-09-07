@@ -11,7 +11,6 @@
         android:id="@+id/playerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:controller_layout_id="@layout/androidx_media3_ui_player_control_view"
         app:resize_mode="fit"
         app:show_buffering="always"
         app:use_controller="true" />

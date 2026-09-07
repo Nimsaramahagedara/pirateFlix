@@ -124,6 +124,7 @@ class PlayerActivity : AppCompatActivity() {
                         Player.STATE_READY -> playerLoading.visibility = View.GONE
                         Player.STATE_ENDED -> playerLoading.visibility = View.GONE
                         Player.STATE_IDLE -> Unit
+                        else -> Unit
                     }
                 }
 
@@ -144,27 +145,26 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        exoPlayer?.let { player ->
-            when (keyCode) {
-                KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_MEDIA_REWIND -> {
-                    player.seekTo(maxOf(0, player.currentPosition - 10000))
-                    return true
-                }
-                KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> {
-                    player.seekTo(minOf(player.duration, player.currentPosition + 10000))
-                    return true
-                }
-                KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, KeyEvent.KEYCODE_DPAD_CENTER -> {
-                    if (player.isPlaying) player.pause() else player.play()
-                    return true
-                }
-                KeyEvent.KEYCODE_BACK -> {
-                    finish()
-                    return true
-                }
+        val player = exoPlayer ?: return super.onKeyDown(keyCode, event)
+        return when (keyCode) {
+            KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_MEDIA_REWIND -> {
+                player.seekTo(maxOf(0, player.currentPosition - 10000))
+                true
             }
+            KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> {
+                player.seekTo(minOf(player.duration, player.currentPosition + 10000))
+                true
+            }
+            KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, KeyEvent.KEYCODE_DPAD_CENTER -> {
+                if (player.isPlaying) player.pause() else player.play()
+                true
+            }
+            KeyEvent.KEYCODE_BACK -> {
+                finish()
+                true
+            }
+            else -> super.onKeyDown(keyCode, event)
         }
-        return super.onKeyDown(keyCode, event)
     }
 
     private fun releasePlayer() {

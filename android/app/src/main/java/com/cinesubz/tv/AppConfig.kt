@@ -7,7 +7,7 @@ object AppConfig {
      * - Physical Android TV: "http://192.168.x.x:8080/api/" (Your machine's local IP)
      * - Production Cloud: "https://your-backend.domain.com/api/"
      */
-    const val BASE_URL = "http://10.0.2.2:8080/api/"
+    const val BASE_URL = "http://34.31.38.62:8080/api/"
 
     // Origin header required by CineSubz video servers
     const val DEFAULT_REFERER = "https://cinesubz.lk"

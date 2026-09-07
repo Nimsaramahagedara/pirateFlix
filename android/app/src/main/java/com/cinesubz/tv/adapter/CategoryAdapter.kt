@@ -32,7 +32,6 @@ class CategoryAdapter(
 
         init {
             rvMovies.layoutManager = LinearLayoutManager(itemView.context, LinearLayoutManager.HORIZONTAL, false)
-            rvMovies.setHasFixedSize(true)
         }
 
         fun bind(row: CategoryRow) {

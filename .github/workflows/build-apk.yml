@@ -41,7 +41,7 @@ jobs:
 
       - name: Build Release APK
         working-directory: ./android
-        run: ./gradlew assembleRelease -x lint -x lintVitalRelease --stacktrace
+        run: ./gradlew assembleRelease --stacktrace
 
       - name: Rename APK for Easy Identification
         working-directory: ./android

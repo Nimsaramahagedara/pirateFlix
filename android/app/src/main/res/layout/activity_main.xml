@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/scrollView"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/netflix_black">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <!-- Hero Backdrop Section -->
+        <ImageView
+            android:id="@+id/ivHeroBackdrop"
+            android:layout_width="0dp"
+            android:layout_height="450dp"
+            android:scaleType="centerCrop"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:src="@tools:sample/backgrounds/scenic" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="450dp"
+            android:background="@drawable/bg_hero_gradient"
+            app:layout_constraintBottom_toBottomOf="@id/ivHeroBackdrop"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <!-- Hero Content -->
+        <TextView
+            android:id="@+id/tvHeroBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="48dp"
+            android:layout_marginTop="120dp"
+            android:text="FEATURED ON CINESUBZ"
+            android:textColor="@color/netflix_red"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/tvHeroTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="48dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="200dp"
+            android:shadowColor="#000000"
+            android:shadowDx="2"
+            android:shadowDy="2"
+            android:shadowRadius="6"
+            android:textColor="@color/text_white"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvHeroBadge"
+            tools:text="DC (2026)" />
+
+        <LinearLayout
+            android:id="@+id/layoutHeroMeta"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="48dp"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvHeroTitle">
+
+            <TextView
+                android:id="@+id/tvHeroYear"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_green"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                tools:text="2026" />
+
+            <TextView
+                android:id="@+id/tvHeroQuality"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:background="#333333"
+                android:paddingHorizontal="6dp"
+                android:paddingVertical="2dp"
+                android:textColor="@color/text_white"
+                android:textSize="11sp"
+                tools:text="720p" />
+
+            <TextView
+                android:id="@+id/tvHeroIMDb"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:textColor="@color/text_gray"
+                android:textSize="13sp"
+                tools:text="IMDb: tt37501035" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvHeroDesc"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="48dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginEnd="250dp"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:textColor="#CCCCCC"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/layoutHeroMeta"
+            tools:text="DC (2026) Sinhala Subtitles | සිංහල උපසිරැසි සමඟ" />
+
+        <!-- Action Buttons -->
+        <LinearLayout
+            android:id="@+id/layoutButtons"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="48dp"
+            android:layout_marginTop="20dp"
+            android:orientation="horizontal"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvHeroDesc">
+
+            <Button
+                android:id="@+id/btnPlayHero"
+                android:layout_width="wrap_content"
+                android:layout_height="44dp"
+                android:background="@drawable/bg_button_selector"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:paddingHorizontal="24dp"
+                android:text="▶  Play Now"
+                android:textColor="@color/text_white"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/btnRefresh"
+                android:layout_width="wrap_content"
+                android:layout_height="44dp"
+                android:layout_marginStart="16dp"
+                android:background="@drawable/bg_button_selector"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:paddingHorizontal="20dp"
+                android:text="⟳  Refresh"
+                android:textColor="@color/text_white"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+        <!-- Vertical Category Rows -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvCategories"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="30dp"
+            android:nestedScrollingEnabled="false"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/layoutButtons" />
+
+        <!-- Loading / Status -->
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="100dp"
+            android:indeterminateTint="@color/netflix_red"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.core.widget.NestedScrollView>

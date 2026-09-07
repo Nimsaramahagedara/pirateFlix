@@ -1,0 +1,17 @@
+<resources>
+    <!-- Base Leanback / TV Theme -->
+    <style name="Theme.CineSubzTV" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">@color/netflix_black</item>
+        <item name="android:colorPrimary">@color/netflix_red</item>
+        <item name="android:colorPrimaryDark">@color/netflix_dark_bg</item>
+        <item name="android:colorAccent">@color/netflix_red</item>
+        <item name="android:textColorPrimary">@color/text_white</item>
+        <item name="android:textColorSecondary">@color/text_gray</item>
+    </style>
+
+    <!-- Fullscreen Player Theme -->
+    <style name="Theme.CineSubzTV.Fullscreen" parent="Theme.CineSubzTV">
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+    </style>
+</resources>

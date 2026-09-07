@@ -1,0 +1,21 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+    <!-- Background -->
+    <path
+        android:fillColor="#141414"
+        android:pathData="M0,0h320v180h-320z"/>
+    <!-- Red Accent Bar -->
+    <path
+        android:fillColor="#E50914"
+        android:pathData="M0,174h320v6h-320z"/>
+    <!-- Center Icon Accent -->
+    <path
+        android:fillColor="#E50914"
+        android:pathData="M130,50 L190,50 L190,130 L130,130 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M150,70 L175,90 L150,110 Z" />
+</vector>

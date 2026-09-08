@@ -2,6 +2,7 @@ package indexer
 
 import (
 	"fmt"
+	"html"
 	"io"
 	"net/http"
 	"net/url"
@@ -126,8 +127,8 @@ func (s *Scraper) ScrapeMovieDetails(pageURL string, existing *model.Movie) (*mo
 }
 
 // parseMovieCards extracts movies from catalog/search card HTML
-func (s *Scraper) parseMovieCards(html string) ([]model.Movie, error) {
-	matches := reItemCard.FindAllStringSubmatch(html, -1)
+func (s *Scraper) parseMovieCards(content string) ([]model.Movie, error) {
+	matches := reItemCard.FindAllStringSubmatch(content, -1)
 	movies := make([]model.Movie, 0, len(matches))
 
 	for _, m := range matches {
@@ -163,9 +164,10 @@ func (s *Scraper) parseMovieCards(html string) ([]model.Movie, error) {
 			quality = strings.TrimSpace(qMatch[1])
 		}
 
-		// Clean up title: Remove "Sinhala Subtitles | සිංහල උපසිරැසි සමඟ"
+		// Clean up title: Decode HTML entities and strip "Sinhala Subtitle(s) | ..."
+		rawTitle = html.UnescapeString(rawTitle)
 		cleanedTitle := rawTitle
-		if idx := strings.Index(cleanedTitle, "Sinhala Subtitles"); idx != -1 {
+		if idx := strings.Index(cleanedTitle, "Sinhala Subtitle"); idx != -1 {
 			cleanedTitle = strings.TrimSpace(cleanedTitle[:idx])
 		}
 		cleanedTitle = strings.TrimSuffix(cleanedTitle, "|")

@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/netflix_black"
+    android:paddingStart="40dp"
+    android:paddingTop="32dp"
+    android:paddingEnd="40dp"
+    android:paddingBottom="24dp">
+
+    <!-- Back Button -->
+    <Button
+        android:id="@+id/btnBack"
+        android:layout_width="wrap_content"
+        android:layout_height="48dp"
+        android:background="@drawable/bg_button_selector"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:nextFocusRight="@id/etSearchQuery"
+        android:nextFocusDown="@id/rvSearchResults"
+        android:paddingHorizontal="20dp"
+        android:text="←  Back"
+        android:textColor="@color/text_white"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Search Input Bar -->
+    <EditText
+        android:id="@+id/etSearchQuery"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:background="@drawable/bg_search_input_selector"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:hint="Search movies, Sinhala subtitles, titles..."
+        android:imeOptions="actionSearch"
+        android:inputType="text"
+        android:maxLines="1"
+        android:nextFocusLeft="@id/btnBack"
+        android:nextFocusRight="@id/btnClear"
+        android:nextFocusDown="@id/rvSearchResults"
+        android:paddingHorizontal="20dp"
+        android:textColor="@color/text_white"
+        android:textColorHint="@color/text_gray"
+        android:textSize="16sp"
+        app:layout_constraintEnd_toStartOf="@id/btnClear"
+        app:layout_constraintStart_toEndOf="@id/btnBack"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Clear Button -->
+    <Button
+        android:id="@+id/btnClear"
+        android:layout_width="wrap_content"
+        android:layout_height="48dp"
+        android:background="@drawable/bg_button_selector"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:nextFocusLeft="@id/etSearchQuery"
+        android:nextFocusDown="@id/rvSearchResults"
+        android:paddingHorizontal="16dp"
+        android:text="✕ Clear"
+        android:textColor="@color/text_white"
+        android:textSize="13sp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:visibility="visible" />
+
+    <!-- Search Status / Count -->
+    <TextView
+        android:id="@+id/tvSearchStatus"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:textColor="@color/text_gray"
+        android:textSize="14sp"
+        app:layout_constraintEnd_toStartOf="@id/searchProgressBar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/etSearchQuery"
+        tools:text="Found 12 movies for 'Hunter'" />
+
+    <!-- Search Spinner -->
+    <ProgressBar
+        android:id="@+id/searchProgressBar"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:indeterminateTint="@color/netflix_red"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/tvSearchStatus"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/tvSearchStatus" />
+
+    <!-- Results Grid -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvSearchResults"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="16dp"
+        android:clipToPadding="false"
+        android:paddingBottom="40dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvSearchStatus" />
+
+    <!-- Empty State -->
+    <LinearLayout
+        android:id="@+id/layoutEmpty"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvSearchStatus"
+        tools:visibility="visible">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🎬"
+            android:textSize="48sp" />
+
+        <TextView
+            android:id="@+id/tvEmptyMessage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="No movies found. Try another search term."
+            android:textColor="@color/text_gray"
+            android:textSize="16sp" />
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

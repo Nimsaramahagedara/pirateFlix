@@ -11,9 +11,14 @@ import com.cinesubz.tv.R
 import com.cinesubz.tv.model.Movie
 
 class MovieAdapter(
-    private val movies: List<Movie>,
+    private var movies: List<Movie>,
     private val onMovieClick: (Movie) -> Unit
 ) : RecyclerView.Adapter<MovieAdapter.MovieViewHolder>() {
+
+    fun updateMovies(newMovies: List<Movie>) {
+        this.movies = newMovies
+        notifyDataSetChanged()
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MovieViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_movie_card, parent, false)

@@ -28,6 +28,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvHeroQuality: TextView
     private lateinit var tvHeroIMDb: TextView
     private lateinit var btnPlayHero: Button
+    private lateinit var btnSearch: Button
     private lateinit var btnRefresh: Button
     private lateinit var rvCategories: RecyclerView
     private lateinit var progressBar: ProgressBar
@@ -51,6 +52,7 @@ class MainActivity : AppCompatActivity() {
         tvHeroQuality = findViewById(R.id.tvHeroQuality)
         tvHeroIMDb = findViewById(R.id.tvHeroIMDb)
         btnPlayHero = findViewById(R.id.btnPlayHero)
+        btnSearch = findViewById(R.id.btnSearch)
         btnRefresh = findViewById(R.id.btnRefresh)
         rvCategories = findViewById(R.id.rvCategories)
         progressBar = findViewById(R.id.progressBar)
@@ -64,6 +66,10 @@ class MainActivity : AppCompatActivity() {
     private fun setupListeners() {
         btnPlayHero.setOnClickListener {
             currentHeroMovie?.let { startPlayback(it) }
+        }
+
+        btnSearch.setOnClickListener {
+            startActivity(Intent(this, SearchActivity::class.java))
         }
 
         btnRefresh.setOnClickListener {

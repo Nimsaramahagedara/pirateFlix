@@ -5,9 +5,17 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
+	"strings"
 	"time"
 
 	"cinesubz-backend/internal/model"
+)
+
+var (
+	reDefQuality  = regexp.MustCompile(`\{[^{}]*?"url"\s*:\s*["'](https?://[^"']+\.(?:mp4|m3u8)[^"']*)["'][^{}]*?"default"\s*:\s*true`)
+	reArtURL      = regexp.MustCompile(`url\s*:\s*["'](https?://[^"']+\.(?:mp4|m3u8)[^"']*)["']`)
+	reDirectMedia = regexp.MustCompile(`(https?://[^\s"'<>]+\.(?:mp4|m3u8)[^\s"'<>]*)`)
 )
 
 type zetaPlayerRawResponse struct {
@@ -29,7 +37,54 @@ func NewStreamResolver() *StreamResolver {
 	}
 }
 
-// ResolveStream queries the ZetaPlayer API to fetch the direct streaming source for a movie.
+// extractDirectVideoURL parses player HTML pages (e.g. Artplayer / CS Player) to extract the actual video CDN URL.
+func (r *StreamResolver) extractDirectVideoURL(pageURL string) string {
+	if strings.Contains(pageURL, "skylines") && strings.Contains(pageURL, ".mp4") {
+		return pageURL
+	}
+
+	req, err := http.NewRequest("GET", pageURL, nil)
+	if err != nil {
+		return pageURL
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+	req.Header.Set("Referer", "https://cinesubz.lk/")
+
+	resp, err := r.client.Do(req)
+	if err != nil {
+		return pageURL
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return pageURL
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return pageURL
+	}
+	html := string(body)
+
+	// 1. Check for "default":true in ALL_QUALITIES array
+	if m := reDefQuality.FindStringSubmatch(html); len(m) > 1 {
+		return m[1]
+	}
+
+	// 2. Check for Artplayer main video url: '...'
+	if m := reArtURL.FindStringSubmatch(html); len(m) > 1 {
+		return m[1]
+	}
+
+	// 3. Fallback to any direct media link
+	if m := reDirectMedia.FindStringSubmatch(html); len(m) > 1 {
+		return m[1]
+	}
+
+	return pageURL
+}
+
+// ResolveStream queries the ZetaPlayer API and extracts the raw playable video URL for ExoPlayer.
 func (r *StreamResolver) ResolveStream(postID string, serverNum string) (*model.StreamResponse, error) {
 	if postID == "" {
 		return nil, fmt.Errorf("postID cannot be empty")
@@ -76,25 +131,29 @@ func (r *StreamResolver) ResolveStream(postID string, serverNum string) (*model.
 			continue
 		}
 
-		streamURL := raw.EmbedURL
-		if streamURL == "" {
-			streamURL = raw.PlayURL
+		embedURL := raw.EmbedURL
+		if embedURL == "" {
+			embedURL = raw.PlayURL
 		}
 
-		if streamURL == "" {
+		if embedURL == "" {
 			lastErr = fmt.Errorf("no stream URL found in player response")
 			continue
 		}
 
+		// Extract direct raw video stream from the player page
+		directVideoURL := r.extractDirectVideoURL(embedURL)
+
 		streamType := "mp4"
-		if strType, ok := raw.Type.(string); ok && strType != "" {
-			streamType = strType
+		if strings.Contains(directVideoURL, ".m3u8") {
+			streamType = "hls"
 		}
 
 		return &model.StreamResponse{
 			PostID:    postID,
 			Server:    serverNum,
-			StreamURL: streamURL,
+			StreamURL: directVideoURL,
+			EmbedURL:  embedURL,
 			Type:      streamType,
 			Headers: map[string]string{
 				"Referer":    "https://cinesubz.lk",

@@ -30,6 +30,7 @@ type StreamResponse struct {
 	PostID    string            `json:"post_id"`
 	Server    string            `json:"server"`
 	StreamURL string            `json:"stream_url"`
+	EmbedURL  string            `json:"embed_url,omitempty"`
 	Type      string            `json:"type"` // "mp4", "iframe", etc.
 	Headers   map[string]string `json:"headers"`
 	Error     string            `json:"error,omitempty"`

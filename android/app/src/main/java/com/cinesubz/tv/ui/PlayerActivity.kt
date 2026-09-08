@@ -13,12 +13,17 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
 import com.cinesubz.tv.AppConfig
 import com.cinesubz.tv.R
 import com.cinesubz.tv.network.ApiClient
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import java.util.concurrent.TimeUnit
 
 class PlayerActivity : AppCompatActivity() {
 
@@ -79,6 +84,55 @@ class PlayerActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Resolves the raw playable video URL (e.g. from CDN) if the backend returned an Artplayer/HTML wrapper.
+     */
+    private suspend fun resolvePlayableUrl(rawUrl: String): String = withContext(Dispatchers.IO) {
+        if (rawUrl.contains("skylines") || rawUrl.contains(".m3u8")) {
+            return@withContext rawUrl
+        }
+        if (rawUrl.contains("csplayer") || rawUrl.contains("player") || rawUrl.contains("/mv/")) {
+            try {
+                val client = OkHttpClient.Builder()
+                    .connectTimeout(10, TimeUnit.SECONDS)
+                    .readTimeout(10, TimeUnit.SECONDS)
+                    .followRedirects(true)
+                    .build()
+                val request = Request.Builder()
+                    .url(rawUrl)
+                    .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+                    .header("Referer", "https://cinesubz.lk/")
+                    .build()
+                val response = client.newCall(request).execute()
+                val body = response.body?.string() ?: ""
+
+                // 1. Look for ALL_QUALITIES default or any quality URL
+                val defQualityRegex = Regex("""\{[^{}]*?"url"\s*:\s*["'](https?://[^"']+\.(?:mp4|m3u8)[^"']*)["'][^{}]*?"default"\s*:\s*true""")
+                val defMatch = defQualityRegex.find(body)
+                if (defMatch != null) {
+                    return@withContext defMatch.groupValues[1]
+                }
+
+                // 2. Look for Artplayer main url: '...'
+                val artUrlRegex = Regex("""url\s*:\s*["'](https?://[^"']+\.(?:mp4|m3u8)[^"']*)["']""")
+                val artMatch = artUrlRegex.find(body)
+                if (artMatch != null) {
+                    return@withContext artMatch.groupValues[1]
+                }
+
+                // 3. Fallback to any direct media link
+                val anyMediaRegex = Regex("""(https?://[^\s"'<>]+\.(?:mp4|m3u8)[^\s"'<>]*)""")
+                val anyMatch = anyMediaRegex.find(body)
+                if (anyMatch != null) {
+                    return@withContext anyMatch.groupValues[1]
+                }
+            } catch (_: Exception) {
+                // Return fallback rawUrl
+            }
+        }
+        rawUrl
+    }
+
     private fun resolveAndPlayStream(server: String) {
         playerLoading.visibility = View.VISIBLE
         tvPlayerError.visibility = View.GONE
@@ -88,7 +142,8 @@ class PlayerActivity : AppCompatActivity() {
                 val response = ApiClient.service.getStream(movieId, server)
                 if (response.isSuccessful && response.body()?.streamUrl != null) {
                     val streamData = response.body()!!
-                    initExoPlayer(streamData.streamUrl!!, streamData.headers)
+                    val playableUrl = resolvePlayableUrl(streamData.streamUrl!!)
+                    initExoPlayer(playableUrl, streamData.headers)
                 } else {
                     showError("Unable to resolve streaming link for server $server")
                 }
@@ -101,39 +156,52 @@ class PlayerActivity : AppCompatActivity() {
     private fun initExoPlayer(streamUrl: String, headers: Map<String, String>) {
         releasePlayer()
 
-        // Configure HTTP Data Source with required Referer header
+        // Configure HTTP Data Source with required headers and cross-protocol redirects
         val referer = headers["Referer"] ?: AppConfig.DEFAULT_REFERER
         val userAgent = headers["User-Agent"] ?: AppConfig.USER_AGENT
 
+        val requestProperties = HashMap<String, String>().apply {
+            putAll(headers)
+            put("Referer", referer)
+        }
+
         val httpDataSourceFactory = DefaultHttpDataSource.Factory()
             .setUserAgent(userAgent)
-            .setDefaultRequestProperties(mapOf("Referer" to referer))
+            .setDefaultRequestProperties(requestProperties)
+            .setAllowCrossProtocolRedirects(true)
+            .setConnectTimeoutMs(15000)
+            .setReadTimeoutMs(15000)
 
-        val mediaSource = ProgressiveMediaSource.Factory(httpDataSourceFactory)
-            .createMediaSource(MediaItem.fromUri(streamUrl))
+        val mediaSourceFactory = DefaultMediaSourceFactory(this)
+            .setDataSourceFactory(httpDataSourceFactory)
 
-        exoPlayer = ExoPlayer.Builder(this).build().apply {
-            setMediaSource(mediaSource)
-            prepare()
-            playWhenReady = true
+        val mediaItem = MediaItem.fromUri(streamUrl)
+        val mediaSource = mediaSourceFactory.createMediaSource(mediaItem)
 
-            addListener(object : Player.Listener {
-                override fun onPlaybackStateChanged(playbackState: Int) {
-                    when (playbackState) {
-                        Player.STATE_BUFFERING -> playerLoading.visibility = View.VISIBLE
-                        Player.STATE_READY -> playerLoading.visibility = View.GONE
-                        Player.STATE_ENDED -> playerLoading.visibility = View.GONE
-                        Player.STATE_IDLE -> Unit
-                        else -> Unit
+        exoPlayer = ExoPlayer.Builder(this)
+            .setMediaSourceFactory(mediaSourceFactory)
+            .build().apply {
+                setMediaSource(mediaSource)
+                prepare()
+                playWhenReady = true
+
+                addListener(object : Player.Listener {
+                    override fun onPlaybackStateChanged(playbackState: Int) {
+                        when (playbackState) {
+                            Player.STATE_BUFFERING -> playerLoading.visibility = View.VISIBLE
+                            Player.STATE_READY -> playerLoading.visibility = View.GONE
+                            Player.STATE_ENDED -> playerLoading.visibility = View.GONE
+                            Player.STATE_IDLE -> Unit
+                            else -> Unit
+                        }
                     }
-                }
 
-                override fun onPlayerError(error: PlaybackException) {
-                    playerLoading.visibility = View.GONE
-                    showError("Playback error: ${error.errorCodeName}")
-                }
-            })
-        }
+                    override fun onPlayerError(error: PlaybackException) {
+                        playerLoading.visibility = View.GONE
+                        showError("Playback error: ${error.errorCodeName}")
+                    }
+                })
+            }
 
         playerView.player = exoPlayer
     }

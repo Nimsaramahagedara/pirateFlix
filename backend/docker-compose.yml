@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: movie-backend:latest
+    image: ghcr.io/nimsaramahagedara/movie-backend:latest
     container_name: movie-backend
     restart: unless-stopped
     dns:

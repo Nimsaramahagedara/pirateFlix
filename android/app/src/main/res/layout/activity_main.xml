@@ -146,18 +146,19 @@
                 android:textSize="14sp"
                 android:textStyle="bold" />
 
-            <Button
+            <!-- Minimal Icon-Only Search Button -->
+            <ImageButton
                 android:id="@+id/btnSearch"
-                android:layout_width="wrap_content"
+                android:layout_width="44dp"
                 android:layout_height="44dp"
                 android:layout_marginStart="16dp"
                 android:background="@drawable/bg_button_selector"
+                android:contentDescription="Search Movies"
                 android:focusable="true"
                 android:focusableInTouchMode="true"
-                android:paddingHorizontal="20dp"
-                android:text="🔍  Search"
-                android:textColor="@color/text_white"
-                android:textSize="14sp" />
+                android:padding="10dp"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_search_minimal" />
 
             <Button
                 android:id="@+id/btnRefresh"
@@ -173,16 +174,69 @@
                 android:textSize="14sp" />
         </LinearLayout>
 
+        <!-- Top Category Filter Tabs (All, Movies, TV Shows) -->
+        <LinearLayout
+            android:id="@+id/layoutCategoryTabs"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="48dp"
+            android:layout_marginTop="24dp"
+            android:orientation="horizontal"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/layoutButtons">
+
+            <Button
+                android:id="@+id/btnFilterAll"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:background="@drawable/bg_filter_chip_selector"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:paddingHorizontal="20dp"
+                android:text="All"
+                android:textColor="@color/text_white"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/btnFilterMovies"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:layout_marginStart="12dp"
+                android:background="@drawable/bg_filter_chip_selector"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:paddingHorizontal="20dp"
+                android:text="Movies"
+                android:textColor="@color/text_white"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/btnFilterTVShows"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:layout_marginStart="12dp"
+                android:background="@drawable/bg_filter_chip_selector"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:paddingHorizontal="20dp"
+                android:text="TV Shows"
+                android:textColor="@color/text_white"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
         <!-- Vertical Category Rows -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvCategories"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="30dp"
+            android:layout_marginTop="20dp"
             android:nestedScrollingEnabled="false"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/layoutButtons" />
+            app:layout_constraintTop_toBottomOf="@id/layoutCategoryTabs" />
 
         <!-- Loading / Status -->
         <ProgressBar

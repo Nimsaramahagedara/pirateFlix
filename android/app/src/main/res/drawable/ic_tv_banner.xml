@@ -3,19 +3,122 @@
     android:height="180dp"
     android:viewportWidth="320"
     android:viewportHeight="180">
-    <!-- Background -->
+
+    <!-- Deep cinematic black background -->
     <path
-        android:fillColor="#141414"
-        android:pathData="M0,0h320v180h-320z"/>
-    <!-- Red Accent Bar -->
-    <path
-        android:fillColor="#E50914"
-        android:pathData="M0,174h320v6h-320z"/>
-    <!-- Center Icon Accent -->
+        android:fillColor="#0C0C0C"
+        android:pathData="M0,0h320v180h-320z" />
+
+    <!-- Netflix-style bottom vibrant red accent bar -->
     <path
         android:fillColor="#E50914"
-        android:pathData="M130,50 L190,50 L190,130 L130,130 Z" />
+        android:pathData="M0,175h320v5h-320z" />
+
+    <!-- Subtle dark red ambient center glow -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M150,70 L175,90 L150,110 Z" />
+        android:fillColor="#220608"
+        android:pathData="M160,90m-70,0a70,70 0,1 1,140 0a70,70 0,1 1,-140 0" />
+
+    <!-- Pirate Skull + Netflix Ribbon "N" scaled & centered on TV Banner -->
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="1.35"
+        android:scaleY="1.35"
+        android:translateX="106"
+        android:translateY="32">
+
+        <!-- ============================================== -->
+        <!-- 3D NETFLIX-STYLE RIBBON "N"                    -->
+        <!-- ============================================== -->
+        <!-- Left Vertical Leg (Netflix Vibrant Red) -->
+        <path
+            android:fillColor="#E50914"
+            android:pathData="M33,42 L45,42 L45,96 L33,96 Z" />
+
+        <!-- Right Vertical Leg (Netflix Vibrant Red) -->
+        <path
+            android:fillColor="#E50914"
+            android:pathData="M63,42 L75,42 L75,96 L63,96 Z" />
+
+        <!-- Folded Diagonal Ribbon (Deep 3D Shadow Red) -->
+        <path
+            android:fillColor="#990B11"
+            android:pathData="M33,42 L45,42 L75,96 L63,96 Z" />
+
+        <!-- Front Diagonal Highlight (Adds Authentic Ribbon Depth) -->
+        <path
+            android:fillColor="#B81D24"
+            android:pathData="M33,42 L40,42 L70,96 L63,96 Z" />
+
+        <!-- ============================================== -->
+        <!-- PIRATE SKULL & CROSSBONES ON TOP OF "N"        -->
+        <!-- ============================================== -->
+        <!-- Crossed Bones Behind Skull -->
+        <path
+            android:fillColor="#E6E6E6"
+            android:pathData="M38,18 L70,38 L68,41 L36,21 Z" />
+        <path
+            android:fillColor="#E6E6E6"
+            android:pathData="M37,16 A2.5,2.5 0 1 1 35,21 A2.5,2.5 0 1 1 37,16 Z
+                              M69,36 A2.5,2.5 0 1 1 71,41 A2.5,2.5 0 1 1 69,36 Z" />
+
+        <path
+            android:fillColor="#E6E6E6"
+            android:pathData="M70,18 L38,38 L36,41 L68,21 Z" />
+        <path
+            android:fillColor="#E6E6E6"
+            android:pathData="M69,16 A2.5,2.5 0 1 1 71,21 A2.5,2.5 0 1 1 69,16 Z
+                              M37,36 A2.5,2.5 0 1 1 35,41 A2.5,2.5 0 1 1 37,36 Z" />
+
+        <!-- Skull Base (Bone White Cranium) -->
+        <path
+            android:fillColor="#F4F4F4"
+            android:pathData="M42,27 C42,20 47,15 54,15 C61,15 66,20 66,27 C66,31 63,34 61,35 L61,40 C61,41 60,42 59,42 L49,42 C48,42 47,41 47,40 L47,35 C45,34 42,31 42,27 Z" />
+
+        <!-- Pirate Bandana (Vibrant Netflix Red) -->
+        <path
+            android:fillColor="#E50914"
+            android:pathData="M42,24 C44,17 48,15 54,15 C60,15 64,17 66,24 C62,22 46,22 42,24 Z" />
+        <!-- Bandana Knot & Tails on Right Side -->
+        <path
+            android:fillColor="#B81D24"
+            android:pathData="M65,22 C67,20 70,22 70,25 C69,27 66,28 65,25 Z
+                              M68,24 L73,28 L71,30 L67,26 Z" />
+
+        <!-- Left Eye Socket -->
+        <path
+            android:fillColor="#141414"
+            android:pathData="M46,29 C46,27.5 47.5,26 49,26 C50.5,26 52,27.5 52,29 C52,30.5 50.5,32 49,32 C47.5,32 46,30.5 46,29 Z" />
+
+        <!-- Pirate Eye Patch on Right Eye -->
+        <path
+            android:strokeColor="#141414"
+            android:strokeWidth="1.2"
+            android:fillColor="#00000000"
+            android:pathData="M44,22 L65,34" />
+        <path
+            android:fillColor="#141414"
+            android:pathData="M56,29 C56,27 58,25 60,26 C62,27 62.5,30 61,32 C59.5,33.5 57,32.5 56,29 Z" />
+
+        <!-- Nose Cavity (Inverted Triangle) -->
+        <path
+            android:fillColor="#141414"
+            android:pathData="M53,33.5 L55,33.5 L54,35.5 Z" />
+
+        <!-- Teeth / Mouth Line -->
+        <path
+            android:strokeColor="#141414"
+            android:strokeWidth="1"
+            android:fillColor="#00000000"
+            android:pathData="M49,38.5 L59,38.5" />
+        <!-- Tooth Separators -->
+        <path
+            android:strokeColor="#141414"
+            android:strokeWidth="0.8"
+            android:fillColor="#00000000"
+            android:pathData="M51,37 L51,40 M54,37 L54,40 M57,37 L57,40" />
+
+    </group>
+
 </vector>

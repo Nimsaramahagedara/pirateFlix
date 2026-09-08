@@ -77,6 +77,42 @@ func (s *Scraper) ScrapeCatalogPage(page int) ([]model.Movie, error) {
 	return s.parseMovieCards(html)
 }
 
+// ScrapeTrendingPage queries CineSubz trending movies
+func (s *Scraper) ScrapeTrendingPage(page int) ([]model.Movie, error) {
+	pageURL := "https://cinesubz.lk/trending/"
+	if page > 1 {
+		pageURL = fmt.Sprintf("https://cinesubz.lk/trending/page/%d/", page)
+	}
+
+	content, err := s.get(pageURL)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.parseMovieCards(content)
+}
+
+// ScrapeTVShowsPage queries CineSubz TV shows & series
+func (s *Scraper) ScrapeTVShowsPage(page int) ([]model.Movie, error) {
+	pageURL := "https://cinesubz.lk/tvshows/"
+	if page > 1 {
+		pageURL = fmt.Sprintf("https://cinesubz.lk/tvshows/page/%d/", page)
+	}
+
+	content, err := s.get(pageURL)
+	if err != nil {
+		return nil, err
+	}
+
+	movies, err := s.parseMovieCards(content)
+	if err == nil {
+		for i := range movies {
+			movies[i].Genres = append(movies[i].Genres, "tvshows")
+		}
+	}
+	return movies, err
+}
+
 // ScrapeSearch queries CineSubz search and parses result cards
 func (s *Scraper) ScrapeSearch(query string) ([]model.Movie, error) {
 	searchURL := fmt.Sprintf("https://cinesubz.lk/?s=%s", url.QueryEscape(query))

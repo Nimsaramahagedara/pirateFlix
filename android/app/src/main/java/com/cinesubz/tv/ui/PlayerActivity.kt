@@ -1,11 +1,17 @@
 package com.cinesubz.tv.ui
 
+import android.content.Context
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.KeyEvent
 import android.view.View
+import android.view.WindowManager
 import android.widget.Button
+import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
@@ -24,6 +30,7 @@ import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 class PlayerActivity : AppCompatActivity() {
 
@@ -33,6 +40,7 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private lateinit var playerView: PlayerView
+    private lateinit var topBar: LinearLayout
     private lateinit var tvPlayerTitle: TextView
     private lateinit var tvPlayerError: TextView
     private lateinit var playerLoading: ProgressBar
@@ -43,9 +51,19 @@ class PlayerActivity : AppCompatActivity() {
     private var movieId: String = ""
     private var movieTitle: String = ""
     private var currentServer: String = "1"
+    private val hasSeekedToSavedPos = AtomicBoolean(false)
+
+    private val playbackPrefs by lazy {
+        getSharedPreferences("nimsaratv_playback", Context.MODE_PRIVATE)
+    }
+
+    private val hideHandler = Handler(Looper.getMainLooper())
+    private val hideTopBarRunnable = Runnable { hideTopBar() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Prevent TV screensaver from turning on while video player activity is open
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         setContentView(R.layout.activity_player)
 
         movieId = intent.getStringExtra(EXTRA_MOVIE_ID) ?: ""
@@ -58,6 +76,7 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun initViews() {
         playerView = findViewById(R.id.playerView)
+        topBar = findViewById(R.id.topBar)
         tvPlayerTitle = findViewById(R.id.tvPlayerTitle)
         tvPlayerError = findViewById(R.id.tvPlayerError)
         playerLoading = findViewById(R.id.playerLoading)
@@ -65,20 +84,57 @@ class PlayerActivity : AppCompatActivity() {
         btnServer2 = findViewById(R.id.btnServer2)
 
         tvPlayerTitle.text = movieTitle
+        playerView.keepScreenOn = true
         playerView.requestFocus()
+
+        // Sync topBar visibility with PlayerView controller visibility
+        playerView.setControllerVisibilityListener(PlayerView.ControllerVisibilityListener { visibility ->
+            if (visibility == View.VISIBLE) {
+                showTopBar()
+            } else {
+                hideTopBar()
+            }
+        })
+    }
+
+    private fun showTopBar() {
+        topBar.animate().cancel()
+        topBar.visibility = View.VISIBLE
+        topBar.alpha = 1.0f
+        if (exoPlayer?.isPlaying == true) {
+            scheduleHideTopBar()
+        }
+    }
+
+    private fun hideTopBar() {
+        if (isDestroyed || isFinishing) return
+        topBar.animate()
+            .alpha(0f)
+            .setDuration(400)
+            .withEndAction { topBar.visibility = View.GONE }
+            .start()
+    }
+
+    private fun scheduleHideTopBar() {
+        hideHandler.removeCallbacks(hideTopBarRunnable)
+        hideHandler.postDelayed(hideTopBarRunnable, 3500)
     }
 
     private fun setupListeners() {
         btnServer1.setOnClickListener {
             if (currentServer != "1") {
+                savePlaybackPosition()
                 currentServer = "1"
+                hasSeekedToSavedPos.set(false)
                 resolveAndPlayStream(currentServer)
             }
         }
 
         btnServer2.setOnClickListener {
             if (currentServer != "2") {
+                savePlaybackPosition()
                 currentServer = "2"
+                hasSeekedToSavedPos.set(false)
                 resolveAndPlayStream(currentServer)
             }
         }
@@ -189,21 +245,77 @@ class PlayerActivity : AppCompatActivity() {
                     override fun onPlaybackStateChanged(playbackState: Int) {
                         when (playbackState) {
                             Player.STATE_BUFFERING -> playerLoading.visibility = View.VISIBLE
-                            Player.STATE_READY -> playerLoading.visibility = View.GONE
-                            Player.STATE_ENDED -> playerLoading.visibility = View.GONE
+                            Player.STATE_READY -> {
+                                playerLoading.visibility = View.GONE
+                                // Resume last saved playback position
+                                val savedPos = playbackPrefs.getLong("pos_$movieId", 0L)
+                                if (savedPos > 3000L && hasSeekedToSavedPos.compareAndSet(false, true)) {
+                                    seekTo(savedPos)
+                                    Toast.makeText(
+                                        this@PlayerActivity,
+                                        "Resuming from ${formatDuration(savedPos)}",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                                scheduleHideTopBar()
+                            }
+                            Player.STATE_ENDED -> {
+                                playerLoading.visibility = View.GONE
+                                // Reset saved position on completion
+                                playbackPrefs.edit().remove("pos_$movieId").apply()
+                                showTopBar()
+                            }
                             Player.STATE_IDLE -> Unit
                             else -> Unit
+                        }
+                    }
+
+                    override fun onIsPlayingChanged(isPlaying: Boolean) {
+                        playerView.keepScreenOn = isPlaying
+                        if (isPlaying) {
+                            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                            scheduleHideTopBar()
+                        } else {
+                            showTopBar()
                         }
                     }
 
                     override fun onPlayerError(error: PlaybackException) {
                         playerLoading.visibility = View.GONE
                         showError("Playback error: ${error.errorCodeName}")
+                        showTopBar()
                     }
                 })
             }
 
         playerView.player = exoPlayer
+        scheduleHideTopBar()
+    }
+
+    private fun savePlaybackPosition() {
+        val player = exoPlayer ?: return
+        val pos = player.currentPosition
+        val dur = player.duration
+        if (movieId.isNotEmpty() && pos > 0 && dur > 0) {
+            // Reset if watched to end (>95% or within 30 seconds of end)
+            if (pos >= dur - 30_000 || pos >= dur * 0.95) {
+                playbackPrefs.edit().remove("pos_$movieId").apply()
+            } else {
+                playbackPrefs.edit().putLong("pos_$movieId", pos).apply()
+            }
+        }
+    }
+
+    private fun formatDuration(millis: Long): String {
+        val totalSeconds = millis / 1000
+        val hours = totalSeconds / 3600
+        val minutes = (totalSeconds % 3600) / 60
+        val seconds = totalSeconds % 60
+        return if (hours > 0) {
+            String.format("%d:%02d:%02d", hours, minutes, seconds)
+        } else {
+            String.format("%02d:%02d", minutes, seconds)
+        }
     }
 
     private fun showError(message: String) {
@@ -213,21 +325,38 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        // Show controls upon any remote control activity
+        showTopBar()
+
         val player = exoPlayer ?: return super.onKeyDown(keyCode, event)
         return when (keyCode) {
             KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_MEDIA_REWIND -> {
                 player.seekTo(maxOf(0, player.currentPosition - 10000))
+                scheduleHideTopBar()
                 true
             }
             KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> {
                 player.seekTo(minOf(player.duration, player.currentPosition + 10000))
+                scheduleHideTopBar()
                 true
             }
             KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, KeyEvent.KEYCODE_DPAD_CENTER -> {
-                if (player.isPlaying) player.pause() else player.play()
+                if (player.isPlaying) {
+                    player.pause()
+                    showTopBar()
+                } else {
+                    player.play()
+                    scheduleHideTopBar()
+                }
+                true
+            }
+            KeyEvent.KEYCODE_DPAD_UP -> {
+                showTopBar()
+                btnServer1.requestFocus()
                 true
             }
             KeyEvent.KEYCODE_BACK -> {
+                savePlaybackPosition()
                 finish()
                 true
             }
@@ -236,12 +365,20 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun releasePlayer() {
+        savePlaybackPosition()
+        hideHandler.removeCallbacks(hideTopBarRunnable)
         exoPlayer?.release()
         exoPlayer = null
     }
 
+    override fun onPause() {
+        super.onPause()
+        savePlaybackPosition()
+    }
+
     override fun onStop() {
         super.onStop()
+        savePlaybackPosition()
         exoPlayer?.pause()
     }
 

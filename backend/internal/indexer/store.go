@@ -14,6 +14,8 @@ type Store struct {
 	moviesByURL map[string]*model.Movie
 	allMovies   []*model.Movie
 	byGenre     map[string][]*model.Movie
+	trending    []*model.Movie
+	tvshows     []*model.Movie
 }
 
 // NewStore creates a new in-memory catalog store.
@@ -23,6 +25,8 @@ func NewStore() *Store {
 		moviesByURL: make(map[string]*model.Movie),
 		allMovies:   make([]*model.Movie, 0),
 		byGenre:     make(map[string][]*model.Movie),
+		trending:    make([]*model.Movie, 0),
+		tvshows:     make([]*model.Movie, 0),
 	}
 }
 
@@ -52,6 +56,38 @@ func (s *Store) Upsert(m *model.Movie) {
 		normalized := strings.ToLower(strings.TrimSpace(g))
 		if normalized != "" {
 			s.byGenre[normalized] = append(s.byGenre[normalized], m)
+		}
+	}
+}
+
+// UpsertTrending indexes a batch of trending movies.
+func (s *Store) UpsertTrending(movies []model.Movie) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.trending = make([]*model.Movie, 0, len(movies))
+	for i := range movies {
+		m := &movies[i]
+		s.trending = append(s.trending, m)
+		if _, exists := s.moviesByID[m.ID]; !exists {
+			s.moviesByID[m.ID] = m
+			s.moviesByURL[m.PageURL] = m
+			s.allMovies = append(s.allMovies, m)
+		}
+	}
+}
+
+// UpsertTVShows indexes a batch of TV shows & series.
+func (s *Store) UpsertTVShows(movies []model.Movie) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.tvshows = make([]*model.Movie, 0, len(movies))
+	for i := range movies {
+		m := &movies[i]
+		s.tvshows = append(s.tvshows, m)
+		if _, exists := s.moviesByID[m.ID]; !exists {
+			s.moviesByID[m.ID] = m
+			s.moviesByURL[m.PageURL] = m
+			s.allMovies = append(s.allMovies, m)
 		}
 	}
 }
@@ -179,13 +215,31 @@ func (s *Store) GetHomeFeed() model.HomeFeed {
 		return res
 	}
 
-	// Row 1: Latest Releases
+	// Row 1: Trending Now
+	if len(s.trending) > 0 {
+		feed.Rows = append(feed.Rows, model.CategoryRow{
+			Title:    "Trending Now",
+			Category: "trending",
+			Movies:   take(s.trending, 15),
+		})
+	}
+
+	// Row 2: Latest Movies
 	latestMovies := take(s.allMovies, 15)
 	if len(latestMovies) > 0 {
 		feed.Rows = append(feed.Rows, model.CategoryRow{
-			Title:    "Latest Releases",
-			Category: "latest",
+			Title:    "Latest Movies",
+			Category: "movies",
 			Movies:   latestMovies,
+		})
+	}
+
+	// Row 3: TV Shows & Series
+	if len(s.tvshows) > 0 {
+		feed.Rows = append(feed.Rows, model.CategoryRow{
+			Title:    "TV Shows & Series",
+			Category: "tvshows",
+			Movies:   take(s.tvshows, 15),
 		})
 	}
 

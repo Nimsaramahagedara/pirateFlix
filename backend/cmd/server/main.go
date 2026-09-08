@@ -42,9 +42,28 @@ func main() {
 				store.Upsert(&movies[i])
 			}
 			log.Printf("Indexed page %d (%d movies so far)", p, store.Count())
-			time.Sleep(500 * time.Millisecond) // Gentle rate limit
+			time.Sleep(300 * time.Millisecond) // Gentle rate limit
 		}
-		log.Printf("Initial catalog indexing finished. Total movies: %d", store.Count())
+
+		// Scrape Trending Now
+		log.Println("Scraping Trending Now movies...")
+		if trending, err := scraper.ScrapeTrendingPage(1); err == nil {
+			store.UpsertTrending(trending)
+			log.Printf("Indexed %d Trending Now movies", len(trending))
+		} else {
+			log.Printf("Trending scrape error: %v", err)
+		}
+
+		// Scrape TV Shows & Series
+		log.Println("Scraping TV Shows & Series...")
+		if tvshows, err := scraper.ScrapeTVShowsPage(1); err == nil {
+			store.UpsertTVShows(tvshows)
+			log.Printf("Indexed %d TV Shows", len(tvshows))
+		} else {
+			log.Printf("TV Shows scrape error: %v", err)
+		}
+
+		log.Printf("Initial catalog indexing finished. Total items: %d", store.Count())
 	}()
 
 	// Periodic refresh every 30 minutes
@@ -60,6 +79,12 @@ func main() {
 						store.Upsert(&movies[i])
 					}
 				}
+			}
+			if trending, err := scraper.ScrapeTrendingPage(1); err == nil {
+				store.UpsertTrending(trending)
+			}
+			if tvshows, err := scraper.ScrapeTVShowsPage(1); err == nil {
+				store.UpsertTVShows(tvshows)
 			}
 		}
 	}()

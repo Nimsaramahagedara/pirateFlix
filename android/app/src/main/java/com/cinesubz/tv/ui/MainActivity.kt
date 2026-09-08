@@ -76,7 +76,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupListeners() {
         btnPlayHero.setOnClickListener {
-            currentHeroMovie?.let { startPlayback(it) }
+            currentHeroMovie?.let { onMovieItemClicked(it) }
         }
 
         btnSearch.setOnClickListener {
@@ -119,7 +119,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         rvCategories.adapter = CategoryAdapter(filteredRows) { movie ->
-            startPlayback(movie)
+            onMovieItemClicked(movie)
         }
     }
 
@@ -162,10 +162,31 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun onMovieItemClicked(movie: Movie) {
+        val isTv = movie.isTvShow ||
+                movie.pageUrl?.contains("/tvshows/") == true ||
+                movie.title.contains("TV Series", ignoreCase = true) ||
+                movie.title.contains("S01", ignoreCase = true) ||
+                movie.title.contains("Season", ignoreCase = true)
+
+        if (isTv) {
+            val intent = Intent(this, SeriesActivity::class.java).apply {
+                putExtra(SeriesActivity.EXTRA_SERIES_ID, movie.id)
+                putExtra(SeriesActivity.EXTRA_SERIES_TITLE, movie.title)
+                putExtra(SeriesActivity.EXTRA_POSTER, movie.poster)
+                putExtra(SeriesActivity.EXTRA_BACKDROP, movie.backdrop)
+            }
+            startActivity(intent)
+        } else {
+            startPlayback(movie)
+        }
+    }
+
     private fun startPlayback(movie: Movie) {
         val intent = Intent(this, PlayerActivity::class.java).apply {
             putExtra(PlayerActivity.EXTRA_MOVIE_ID, movie.id)
             putExtra(PlayerActivity.EXTRA_MOVIE_TITLE, movie.title)
+            putExtra(PlayerActivity.EXTRA_STREAM_TYPE, "mv")
         }
         startActivity(intent)
     }

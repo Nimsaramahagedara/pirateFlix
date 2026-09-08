@@ -58,7 +58,7 @@ class SearchActivity : AppCompatActivity() {
         // Android TV 5-column grid for 1080p layout
         rvSearchResults.layoutManager = GridLayoutManager(this, 5)
         movieAdapter = MovieAdapter(emptyList()) { movie ->
-            startPlayback(movie)
+            onMovieItemClicked(movie)
         }
         rvSearchResults.adapter = movieAdapter
 
@@ -142,10 +142,31 @@ class SearchActivity : AppCompatActivity() {
         }
     }
 
+    private fun onMovieItemClicked(movie: Movie) {
+        val isTv = movie.isTvShow ||
+                movie.pageUrl?.contains("/tvshows/") == true ||
+                movie.title.contains("TV Series", ignoreCase = true) ||
+                movie.title.contains("S01", ignoreCase = true) ||
+                movie.title.contains("Season", ignoreCase = true)
+
+        if (isTv) {
+            val intent = Intent(this, SeriesActivity::class.java).apply {
+                putExtra(SeriesActivity.EXTRA_SERIES_ID, movie.id)
+                putExtra(SeriesActivity.EXTRA_SERIES_TITLE, movie.title)
+                putExtra(SeriesActivity.EXTRA_POSTER, movie.poster)
+                putExtra(SeriesActivity.EXTRA_BACKDROP, movie.backdrop)
+            }
+            startActivity(intent)
+        } else {
+            startPlayback(movie)
+        }
+    }
+
     private fun startPlayback(movie: Movie) {
         val intent = Intent(this, PlayerActivity::class.java).apply {
             putExtra(PlayerActivity.EXTRA_MOVIE_ID, movie.id)
             putExtra(PlayerActivity.EXTRA_MOVIE_TITLE, movie.title)
+            putExtra(PlayerActivity.EXTRA_STREAM_TYPE, "mv")
         }
         startActivity(intent)
     }

@@ -16,6 +16,7 @@ type Store struct {
 	byGenre     map[string][]*model.Movie
 	trending    []*model.Movie
 	tvshows     []*model.Movie
+	seriesByID  map[string]*model.SeriesDetail
 }
 
 // NewStore creates a new in-memory catalog store.
@@ -27,6 +28,7 @@ func NewStore() *Store {
 		byGenre:     make(map[string][]*model.Movie),
 		trending:    make([]*model.Movie, 0),
 		tvshows:     make([]*model.Movie, 0),
+		seriesByID:  make(map[string]*model.SeriesDetail),
 	}
 }
 
@@ -270,3 +272,19 @@ func (s *Store) GetHomeFeed() model.HomeFeed {
 
 	return feed
 }
+
+// GetSeries retrieves cached TV series details by show ID.
+func (s *Store) GetSeries(id string) (*model.SeriesDetail, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	ser, ok := s.seriesByID[id]
+	return ser, ok
+}
+
+// SetSeries caches TV series details by show ID.
+func (s *Store) SetSeries(id string, ser *model.SeriesDetail) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.seriesByID[id] = ser
+}
+

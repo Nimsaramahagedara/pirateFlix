@@ -37,6 +37,7 @@ class PlayerActivity : AppCompatActivity() {
     companion object {
         const val EXTRA_MOVIE_ID = "extra_movie_id"
         const val EXTRA_MOVIE_TITLE = "extra_movie_title"
+        const val EXTRA_STREAM_TYPE = "extra_stream_type"
     }
 
     private lateinit var playerView: PlayerView
@@ -50,6 +51,7 @@ class PlayerActivity : AppCompatActivity() {
     private var exoPlayer: ExoPlayer? = null
     private var movieId: String = ""
     private var movieTitle: String = ""
+    private var streamType: String = "mv"
     private var currentServer: String = "1"
     private val hasSeekedToSavedPos = AtomicBoolean(false)
 
@@ -68,6 +70,7 @@ class PlayerActivity : AppCompatActivity() {
 
         movieId = intent.getStringExtra(EXTRA_MOVIE_ID) ?: ""
         movieTitle = intent.getStringExtra(EXTRA_MOVIE_TITLE) ?: "Streaming"
+        streamType = intent.getStringExtra(EXTRA_STREAM_TYPE) ?: "mv"
 
         initViews()
         setupListeners()
@@ -195,7 +198,7 @@ class PlayerActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                val response = ApiClient.service.getStream(movieId, server)
+                val response = ApiClient.service.getStream(movieId, server, streamType)
                 if (response.isSuccessful && response.body()?.streamUrl != null) {
                     val streamData = response.body()!!
                     val playableUrl = resolvePlayableUrl(streamData.streamUrl!!)

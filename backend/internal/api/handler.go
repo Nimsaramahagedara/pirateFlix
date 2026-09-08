@@ -110,9 +110,11 @@ func (h *Handler) HandleStream(w http.ResponseWriter, r *http.Request) {
 		server = "1"
 	}
 
-	streamResp, err := h.resolver.ResolveStream(id, server)
+	streamType := r.URL.Query().Get("type")
+
+	streamResp, err := h.resolver.ResolveStream(id, server, streamType)
 	if err != nil {
-		log.Printf("Stream resolution error for ID %s (server %s): %v", id, server, err)
+		log.Printf("Stream resolution error for ID %s (server %s, type %s): %v", id, server, streamType, err)
 		writeJSON(w, http.StatusBadGateway, map[string]string{
 			"error":   "Failed to resolve video stream",
 			"details": err.Error(),
@@ -121,6 +123,51 @@ func (h *Handler) HandleStream(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, streamResp)
+}
+
+// HandleSeriesByID returns full TV series details with seasons and episodes
+func (h *Handler) HandleSeriesByID(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "series id is required"})
+		return
+	}
+
+	// 1. Check cache first
+	if series, found := h.store.GetSeries(id); found {
+		writeJSON(w, http.StatusOK, series)
+		return
+	}
+
+	// 2. Lookup page URL from store
+	var pageURL string
+	if movie, found := h.store.GetByID(id); found && movie.PageURL != "" {
+		pageURL = movie.PageURL
+	}
+
+	if pageURL == "" {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "series not found in index"})
+		return
+	}
+
+	// 3. Scrape series details
+	series, err := h.scraper.ScrapeSeriesDetails(pageURL)
+	if err != nil {
+		log.Printf("Error scraping series details for %s (%s): %v", id, pageURL, err)
+		writeJSON(w, http.StatusBadGateway, map[string]string{
+			"error":   "Failed to scrape series details",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	if series.ID == "" {
+		series.ID = id
+	}
+
+	// Cache it
+	h.store.SetSeries(id, series)
+	writeJSON(w, http.StatusOK, series)
 }
 
 // HandleSearch performs fast search across the catalog (and live scrape fallback)

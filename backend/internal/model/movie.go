@@ -21,6 +21,7 @@ type Movie struct {
 	Rating      string         `json:"rating,omitempty"`
 	Genres      []string       `json:"genres"`
 	PageURL     string         `json:"page_url"`
+	IsTVShow    bool           `json:"is_tv_show"`
 	Servers     []ServerOption `json:"servers,omitempty"`
 	IndexedAt   time.Time      `json:"indexed_at"`
 }
@@ -56,3 +57,37 @@ type MovieListResponse struct {
 	Limit  int     `json:"limit"`
 	Movies []Movie `json:"movies"`
 }
+
+// Episode represents an individual TV episode.
+type Episode struct {
+	ID            string `json:"id"`
+	EpisodeNumber int    `json:"episode_number"`
+	Title         string `json:"title"`
+	Date          string `json:"date,omitempty"`
+	Thumbnail     string `json:"thumbnail,omitempty"`
+	PageURL       string `json:"page_url,omitempty"`
+}
+
+// Season represents a TV series season containing episodes.
+type Season struct {
+	SeasonNumber int       `json:"season_number"`
+	Title        string    `json:"title"`
+	Episodes     []Episode `json:"episodes"`
+}
+
+// SeriesDetail represents the full details of a TV show with seasons and episodes.
+type SeriesDetail struct {
+	ID          string    `json:"id"`
+	Title       string    `json:"title"`
+	Poster      string    `json:"poster"`
+	Backdrop    string    `json:"backdrop,omitempty"`
+	Description string    `json:"description"`
+	Year        string    `json:"year,omitempty"`
+	IMDb        string    `json:"imdb,omitempty"`
+	Rating      string    `json:"rating,omitempty"`
+	Genres      []string  `json:"genres"`
+	PageURL     string    `json:"page_url"`
+	Seasons     []Season  `json:"seasons"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+

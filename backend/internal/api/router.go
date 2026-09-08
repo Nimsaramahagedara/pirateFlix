@@ -15,6 +15,7 @@ func SetupRouter(h *Handler) http.Handler {
 	mux.HandleFunc("GET /api/home", h.HandleHome)
 	mux.HandleFunc("GET /api/movies", h.HandleMovies)
 	mux.HandleFunc("GET /api/movie/{id}", h.HandleMovieByID)
+	mux.HandleFunc("GET /api/series/{id}", h.HandleSeriesByID)
 	mux.HandleFunc("GET /api/stream/{id}", h.HandleStream)
 	mux.HandleFunc("GET /api/search", h.HandleSearch)
 	mux.HandleFunc("POST /api/refresh", h.HandleRefresh)

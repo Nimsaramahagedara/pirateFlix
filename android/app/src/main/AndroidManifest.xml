@@ -49,6 +49,12 @@
             android:screenOrientation="landscape"
             android:windowSoftInputMode="stateHidden|adjustResize" />
 
+        <!-- TV Series Details Screen (Seasons & Episodes) -->
+        <activity
+            android:name=".ui.SeriesActivity"
+            android:exported="false"
+            android:screenOrientation="landscape" />
+
     </application>
 
 </manifest>

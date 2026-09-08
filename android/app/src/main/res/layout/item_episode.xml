@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/episodeCardRoot"
+    android:layout_width="220dp"
+    android:layout_height="160dp"
+    android:layout_margin="8dp"
+    android:background="@drawable/bg_card_selector"
+    android:clickable="true"
+    android:focusable="true"
+    android:focusableInTouchMode="true">
+
+    <!-- 16:9 Episode Thumbnail Preview -->
+    <ImageView
+        android:id="@+id/ivEpisodeThumb"
+        android:layout_width="0dp"
+        android:layout_height="105dp"
+        android:scaleType="centerCrop"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:src="@tools:sample/avatars" />
+
+    <!-- Play icon overlay center -->
+    <ImageView
+        android:id="@+id/ivPlayIcon"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:background="#80000000"
+        android:padding="6dp"
+        android:src="@android:drawable/ic_media_play"
+        app:layout_constraintBottom_toBottomOf="@id/ivEpisodeThumb"
+        app:layout_constraintEnd_toEndOf="@id/ivEpisodeThumb"
+        app:layout_constraintStart_toStartOf="@id/ivEpisodeThumb"
+        app:layout_constraintTop_toTopOf="@id/ivEpisodeThumb"
+        app:tint="@color/text_white" />
+
+    <!-- Episode Number Badge (e.g. EP 1) -->
+    <TextView
+        android:id="@+id/tvEpisodeBadge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="6dp"
+        android:background="#D0E50914"
+        android:paddingHorizontal="6dp"
+        android:paddingVertical="2dp"
+        android:textColor="@color/text_white"
+        android:textSize="10sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="EP 1" />
+
+    <!-- Episode Title -->
+    <TextView
+        android:id="@+id/tvEpisodeTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginEnd="8dp"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="@color/text_white"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/ivEpisodeThumb"
+        tools:text="Episode 1: Pilot" />
+
+    <!-- Episode Air Date -->
+    <TextView
+        android:id="@+id/tvEpisodeDate"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="2dp"
+        android:layout_marginEnd="8dp"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="@color/text_gray"
+        android:textSize="10sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvEpisodeTitle"
+        tools:text="Sep. 07, 2008" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

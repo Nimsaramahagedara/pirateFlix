@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -14,14 +15,25 @@ import (
 )
 
 var (
-	reItemCard   = regexp.MustCompile(`(?s)<div\s+id=["']item-(\d+)["'][^>]*class=["'][^"']*display-item[^"']*["'][^>]*>(.*?)</div>\s*</div>`)
-	reLinkTitle  = regexp.MustCompile(`(?s)<a\s+[^>]*href=["']([^"']+)["'][^>]*title=["']([^"']+)["']`)
-	reImage      = regexp.MustCompile(`(?s)<img\s+[^>]*(?:data-original|src)=["']([^"']+)["']`)
-	reYear       = regexp.MustCompile(`\((\d{4})\)`)
-	reIMDb       = regexp.MustCompile(`IMDbID\s+([a-zA-Z0-9]+)`)
-	reQuality    = regexp.MustCompile(`(?s)<span\s+class=["']mli-quality["']>([^<]+)</span>`)
-	reGenresPage = regexp.MustCompile(`href=["']https://cinesubz\.lk/genre/([^/'"]+)/["']`)
-	reDescMeta   = regexp.MustCompile(`(?s)<meta\s+property=["']og:description["']\s+content=["']([^"']+)["']`)
+	reItemCard     = regexp.MustCompile(`(?s)<div\s+id=["']item-(\d+)["'][^>]*class=["'][^"']*display-item[^"']*["'][^>]*>(.*?)</div>\s*</div>`)
+	reLinkTitle    = regexp.MustCompile(`(?s)<a\s+[^>]*href=["']([^"']+)["'][^>]*title=["']([^"']+)["']`)
+	reImage        = regexp.MustCompile(`(?s)<img\s+[^>]*(?:data-original|src)=["']([^"']+)["']`)
+	reYear         = regexp.MustCompile(`\((\d{4})\)`)
+	reIMDb         = regexp.MustCompile(`IMDbID\s+([a-zA-Z0-9]+)`)
+	reQuality      = regexp.MustCompile(`(?s)<span\s+class=["']mli-quality["']>([^<]+)</span>`)
+	reGenresPage   = regexp.MustCompile(`href=["']https://cinesubz\.lk/genre/([^/'"]+)/["']`)
+	reDescMeta     = regexp.MustCompile(`(?s)<meta\s+property=["']og:description["']\s+content=["']([^"']+)["']`)
+	reTitleMeta    = regexp.MustCompile(`(?is)<meta\s+property=['"]og:title['"]\s+content=['"]([^'"]+)['"]`)
+	reImageMeta    = regexp.MustCompile(`(?is)<meta\s+property=['"]og:image['"]\s+content=['"]([^'"]+)['"]`)
+	rePostID       = regexp.MustCompile(`data-post=['"](\d+)['"]|id=['"]item-(\d+)['"]`)
+	reSeasonBlocks = regexp.MustCompile(`(?is)<ul[^>]+id=['"]season-listep-(\d+)['"][^>]*>(.*?)</ul>`)
+	reEpisodeItem  = regexp.MustCompile(`(?is)<li[^>]*>(.*?)</li>`)
+	reDataPID      = regexp.MustCompile(`data-pid=['"](\d+)['"]`)
+	reDataEpNum    = regexp.MustCompile(`data-episode=['"](\d+)['"]`)
+	reEpLink       = regexp.MustCompile(`href=['"]([^'"]+)['"]`)
+	reEpTitle      = regexp.MustCompile(`(?is)class=['"]ep-title['"][^>]*>(.*?)</span>`)
+	reEpDate       = regexp.MustCompile(`(?is)class=['"]ep-date['"][^>]*>(.*?)</span>`)
+	reEpThumb      = regexp.MustCompile(`(?i)<img[^>]+src=['"]([^'"]+)['"]`)
 )
 
 type Scraper struct {
@@ -107,6 +119,7 @@ func (s *Scraper) ScrapeTVShowsPage(page int) ([]model.Movie, error) {
 	movies, err := s.parseMovieCards(content)
 	if err == nil {
 		for i := range movies {
+			movies[i].IsTVShow = true
 			movies[i].Genres = append(movies[i].Genres, "tvshows")
 		}
 	}
@@ -209,6 +222,11 @@ func (s *Scraper) parseMovieCards(content string) ([]model.Movie, error) {
 		cleanedTitle = strings.TrimSuffix(cleanedTitle, "|")
 		cleanedTitle = strings.TrimSpace(cleanedTitle)
 
+		isTV := strings.Contains(pageURL, "/tvshows/") ||
+			strings.Contains(rawTitle, "TV Series") ||
+			strings.Contains(rawTitle, "S01") ||
+			strings.Contains(rawTitle, "Season")
+
 		movie := model.Movie{
 			ID:          postID,
 			Title:       cleanedTitle,
@@ -220,12 +238,17 @@ func (s *Scraper) parseMovieCards(content string) ([]model.Movie, error) {
 			Rating:      quality,
 			Genres:      []string{"sinhala"},
 			PageURL:     pageURL,
+			IsTVShow:    isTV,
 			Servers: []model.ServerOption{
 				{Type: "mv", Number: "1", Name: "CS Player"},
 				{Type: "mv", Number: "2", Name: "Evo Player"},
 				{Type: "mv", Number: "trailer", Name: "Trailer"},
 			},
 			IndexedAt: time.Now(),
+		}
+
+		if isTV {
+			movie.Genres = append(movie.Genres, "tvshows")
 		}
 
 		// Infer basic genre hints from quality/year
@@ -237,4 +260,121 @@ func (s *Scraper) parseMovieCards(content string) ([]model.Movie, error) {
 	}
 
 	return movies, nil
+}
+
+// ScrapeSeriesDetails fetches full TV series metadata, seasons, and episodes from its page URL.
+func (s *Scraper) ScrapeSeriesDetails(pageURL string) (*model.SeriesDetail, error) {
+	pageHTML, err := s.get(pageURL)
+	if err != nil {
+		return nil, err
+	}
+
+	detail := &model.SeriesDetail{
+		PageURL:   pageURL,
+		Seasons:   make([]model.Season, 0),
+		UpdatedAt: time.Now(),
+	}
+
+	if m := reTitleMeta.FindStringSubmatch(pageHTML); len(m) > 1 {
+		t := html.UnescapeString(m[1])
+		if idx := strings.Index(t, "Sinhala Subtitle"); idx != -1 {
+			t = strings.TrimSpace(t[:idx])
+		}
+		t = strings.TrimSuffix(t, "|")
+		detail.Title = strings.TrimSpace(t)
+	}
+	if m := reDescMeta.FindStringSubmatch(pageHTML); len(m) > 1 {
+		detail.Description = html.UnescapeString(m[1])
+	}
+	if m := reImageMeta.FindStringSubmatch(pageHTML); len(m) > 1 {
+		detail.Poster = m[1]
+		detail.Backdrop = m[1]
+	}
+	if m := reYear.FindStringSubmatch(detail.Title); len(m) > 1 {
+		detail.Year = m[1]
+	}
+	if m := reIMDb.FindStringSubmatch(pageHTML); len(m) > 1 {
+		detail.IMDb = m[1]
+	}
+	if m := rePostID.FindStringSubmatch(pageHTML); len(m) > 1 {
+		for i := 1; i < len(m); i++ {
+			if m[i] != "" {
+				detail.ID = m[i]
+				break
+			}
+		}
+	}
+
+	// Extract genres
+	genreMatches := reGenresPage.FindAllStringSubmatch(pageHTML, -1)
+	genreMap := make(map[string]bool)
+	for _, gm := range genreMatches {
+		if len(gm) > 1 {
+			g := strings.ToLower(strings.TrimSpace(gm[1]))
+			if g != "" && !genreMap[g] {
+				genreMap[g] = true
+				detail.Genres = append(detail.Genres, g)
+			}
+		}
+	}
+
+	blocks := reSeasonBlocks.FindAllStringSubmatch(pageHTML, -1)
+	for _, block := range blocks {
+		sNum, _ := strconv.Atoi(block[1])
+		season := model.Season{
+			SeasonNumber: sNum,
+			Title:        fmt.Sprintf("Season %02d", sNum),
+			Episodes:     make([]model.Episode, 0),
+		}
+
+		items := reEpisodeItem.FindAllStringSubmatch(block[2], -1)
+		for _, it := range items {
+			itemHTML := it[1]
+			pidMatch := reDataPID.FindStringSubmatch(itemHTML)
+			if len(pidMatch) < 2 {
+				continue
+			}
+			pid := pidMatch[1]
+
+			epNum := 1
+			if em := reDataEpNum.FindStringSubmatch(itemHTML); len(em) > 1 {
+				epNum, _ = strconv.Atoi(em[1])
+			}
+
+			epLink := ""
+			if lm := reEpLink.FindStringSubmatch(itemHTML); len(lm) > 1 {
+				epLink = lm[1]
+			}
+
+			epTitle := fmt.Sprintf("Episode %d", epNum)
+			if tm := reEpTitle.FindStringSubmatch(itemHTML); len(tm) > 1 {
+				epTitle = html.UnescapeString(strings.TrimSpace(tm[1]))
+			}
+
+			epDate := ""
+			if dm := reEpDate.FindStringSubmatch(itemHTML); len(dm) > 1 {
+				epDate = html.UnescapeString(strings.TrimSpace(dm[1]))
+			}
+
+			epThumb := detail.Backdrop
+			if thm := reEpThumb.FindStringSubmatch(itemHTML); len(thm) > 1 {
+				if !strings.Contains(thm[1], "no/zt_backdrop") {
+					epThumb = thm[1]
+				}
+			}
+
+			season.Episodes = append(season.Episodes, model.Episode{
+				ID:            pid,
+				EpisodeNumber: epNum,
+				Title:         epTitle,
+				Date:          epDate,
+				Thumbnail:     epThumb,
+				PageURL:       epLink,
+			})
+		}
+
+		detail.Seasons = append(detail.Seasons, season)
+	}
+
+	return detail, nil
 }

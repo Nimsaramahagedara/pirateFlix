@@ -38,7 +38,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="48dp"
             android:layout_marginTop="120dp"
-            android:text="FEATURED ON CINESUBZ"
+            android:text="FEATURED ON NIMSARATV"
             android:textColor="@color/netflix_red"
             android:textSize="12sp"
             android:textStyle="bold"

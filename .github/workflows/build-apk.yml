@@ -48,20 +48,20 @@ jobs:
         working-directory: ./android
         run: |
           mkdir -p output
-          cp app/build/outputs/apk/release/*.apk output/cinesubz-tv-release.apk
+          cp app/build/outputs/apk/release/*.apk output/nimsaratv-release.apk
 
       - name: Upload APK as Build Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: cinesubz-tv-release-apk
-          path: android/output/cinesubz-tv-release.apk
+          name: nimsaratv-release-apk
+          path: android/output/nimsaratv-release.apk
           retention-days: 30
 
       - name: Create GitHub Release (On Tag or Manual)
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: android/output/cinesubz-tv-release.apk
+          files: android/output/nimsaratv-release.apk
           name: Release ${{ github.ref_name }}
           draft: false
           prerelease: false

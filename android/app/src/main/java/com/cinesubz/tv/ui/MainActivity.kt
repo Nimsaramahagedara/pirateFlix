@@ -86,7 +86,7 @@ class MainActivity : AppCompatActivity() {
                     feed.heroBanner?.let { hero ->
                         currentHeroMovie = hero
                         tvHeroTitle.text = hero.title
-                        tvHeroDesc.text = hero.description ?: "Now streaming on CineSubz"
+                        tvHeroDesc.text = hero.description ?: "Now streaming on NimsaraTV"
                         tvHeroYear.text = hero.year ?: "2026"
                         tvHeroQuality.text = hero.rating ?: "HD"
                         tvHeroIMDb.text = if (!hero.imdb.isNullOrEmpty()) "IMDb: ${hero.imdb}" else ""

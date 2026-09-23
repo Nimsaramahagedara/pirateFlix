@@ -204,10 +204,23 @@ class PlayerActivity : AppCompatActivity() {
                     val playableUrl = resolvePlayableUrl(streamData.streamUrl!!)
                     initExoPlayer(playableUrl, streamData.headers)
                 } else {
-                    showError("Unable to resolve streaming link for server $server")
+                    val errorBody = response.errorBody()?.string() ?: ""
+                    val isMaintenance = response.code() == 503 ||
+                            errorBody.contains("maintenance", ignoreCase = true) ||
+                            errorBody.contains("503")
+                    if (isMaintenance) {
+                        showError("CineSubz is currently undergoing maintenance.\nPlease try again shortly.")
+                    } else {
+                        showError("Unable to resolve streaming link for server $server")
+                    }
                 }
             } catch (e: Exception) {
-                showError("Stream error: ${e.localizedMessage}")
+                val msg = e.localizedMessage ?: "Unknown error"
+                if (msg.contains("503") || msg.contains("maintenance", ignoreCase = true)) {
+                    showError("CineSubz is currently undergoing maintenance.\nPlease try again shortly.")
+                } else {
+                    showError("Stream error: $msg")
+                }
             }
         }
     }

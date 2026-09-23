@@ -160,6 +160,20 @@
                 android:scaleType="centerInside"
                 android:src="@drawable/ic_search_minimal" />
 
+            <!-- Minimal Icon-Only Settings Button -->
+            <ImageButton
+                android:id="@+id/btnSettings"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_marginStart="16dp"
+                android:background="@drawable/bg_button_selector"
+                android:contentDescription="Settings and Updates"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:padding="10dp"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_settings" />
+
             <Button
                 android:id="@+id/btnRefresh"
                 android:layout_width="wrap_content"

@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"cinesubz-backend/internal/indexer"
@@ -115,9 +116,18 @@ func (h *Handler) HandleStream(w http.ResponseWriter, r *http.Request) {
 	streamResp, err := h.resolver.ResolveStream(id, server, streamType)
 	if err != nil {
 		log.Printf("Stream resolution error for ID %s (server %s, type %s): %v", id, server, streamType, err)
-		writeJSON(w, http.StatusBadGateway, map[string]string{
+		errStr := err.Error()
+		if strings.Contains(errStr, "503") || strings.Contains(strings.ToLower(errStr), "maintenance") {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]any{
+				"error":          "CineSubz is currently undergoing maintenance. Please try again shortly.",
+				"is_maintenance": true,
+				"details":        errStr,
+			})
+			return
+		}
+		writeJSON(w, http.StatusBadGateway, map[string]any{
 			"error":   "Failed to resolve video stream",
-			"details": err.Error(),
+			"details": errStr,
 		})
 		return
 	}

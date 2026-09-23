@@ -31,6 +31,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvHeroIMDb: TextView
     private lateinit var btnPlayHero: Button
     private lateinit var btnSearch: ImageButton
+    private lateinit var btnSettings: ImageButton
     private lateinit var btnRefresh: Button
     private lateinit var btnFilterAll: Button
     private lateinit var btnFilterMovies: Button
@@ -60,6 +61,7 @@ class MainActivity : AppCompatActivity() {
         tvHeroIMDb = findViewById(R.id.tvHeroIMDb)
         btnPlayHero = findViewById(R.id.btnPlayHero)
         btnSearch = findViewById(R.id.btnSearch)
+        btnSettings = findViewById(R.id.btnSettings)
         btnRefresh = findViewById(R.id.btnRefresh)
         btnFilterAll = findViewById(R.id.btnFilterAll)
         btnFilterMovies = findViewById(R.id.btnFilterMovies)
@@ -81,6 +83,10 @@ class MainActivity : AppCompatActivity() {
 
         btnSearch.setOnClickListener {
             startActivity(Intent(this, SearchActivity::class.java))
+        }
+
+        btnSettings.setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
         }
 
         btnRefresh.setOnClickListener {

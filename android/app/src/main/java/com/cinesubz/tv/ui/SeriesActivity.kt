@@ -19,7 +19,9 @@ import androidx.recyclerview.widget.RecyclerView
 import coil.load
 import com.cinesubz.tv.R
 import com.cinesubz.tv.adapter.EpisodeAdapter
+import com.cinesubz.tv.data.WatchHistoryManager
 import com.cinesubz.tv.model.Episode
+import com.cinesubz.tv.model.Movie
 import com.cinesubz.tv.model.Season
 import com.cinesubz.tv.model.SeriesDetail
 import com.cinesubz.tv.network.ApiClient
@@ -218,6 +220,22 @@ class SeriesActivity : AppCompatActivity() {
         val seriesName = currentSeriesDetail?.title ?: seriesTitle
         val seasonName = selectedSeason?.title ?: "Season"
         val epTitle = "$seriesName - $seasonName E${episode.episodeNumber}: ${episode.title}"
+
+        // Record the TV series itself (not the episode) in Continue Watching
+        val seriesMovie = Movie(
+            id = currentSeriesDetail?.id ?: seriesId,
+            title = seriesName,
+            poster = currentSeriesDetail?.poster ?: intent.getStringExtra(EXTRA_POSTER),
+            backdrop = currentSeriesDetail?.backdrop ?: intent.getStringExtra(EXTRA_BACKDROP),
+            description = currentSeriesDetail?.description,
+            year = currentSeriesDetail?.year,
+            imdb = currentSeriesDetail?.imdb,
+            rating = currentSeriesDetail?.rating,
+            genres = currentSeriesDetail?.genres ?: emptyList(),
+            pageUrl = currentSeriesDetail?.pageUrl,
+            isTvShow = true
+        )
+        WatchHistoryManager.recordWatch(this, seriesMovie)
 
         val intent = Intent(this, PlayerActivity::class.java).apply {
             putExtra(PlayerActivity.EXTRA_MOVIE_ID, episode.id)

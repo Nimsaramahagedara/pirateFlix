@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.RecyclerView
 import coil.load
 import com.cinesubz.tv.R
 import com.cinesubz.tv.adapter.CategoryAdapter
+import com.cinesubz.tv.data.WatchHistoryManager
 import com.cinesubz.tv.model.CategoryRow
 import com.cinesubz.tv.model.Movie
 import com.cinesubz.tv.network.ApiClient
@@ -112,6 +113,25 @@ class MainActivity : AppCompatActivity() {
         btnFilterMovies.isSelected = (filter == "movies")
         btnFilterTVShows.isSelected = (filter == "tvshows")
 
+        val continueWatchingList = WatchHistoryManager.getContinueWatching(this)
+
+        val filteredContinue = when (filter) {
+            "movies" -> continueWatchingList.filter { !it.isTvShow }
+            "tvshows" -> continueWatchingList.filter { it.isTvShow }
+            else -> continueWatchingList
+        }
+
+        val rowsToDisplay = mutableListOf<CategoryRow>()
+        if (filteredContinue.isNotEmpty()) {
+            rowsToDisplay.add(
+                CategoryRow(
+                    title = "Continue Watching",
+                    category = "continue_watching",
+                    movies = filteredContinue
+                )
+            )
+        }
+
         val filteredRows = when (filter) {
             "movies" -> allCategoryRows.filter {
                 it.category != "tvshows"
@@ -123,8 +143,9 @@ class MainActivity : AppCompatActivity() {
             }
             else -> allCategoryRows
         }
+        rowsToDisplay.addAll(filteredRows)
 
-        rvCategories.adapter = CategoryAdapter(filteredRows) { movie ->
+        rvCategories.adapter = CategoryAdapter(rowsToDisplay) { movie ->
             onMovieItemClicked(movie)
         }
     }
@@ -188,7 +209,15 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (allCategoryRows.isNotEmpty()) {
+            applyCategoryFilter(selectedFilter)
+        }
+    }
+
     private fun startPlayback(movie: Movie) {
+        WatchHistoryManager.recordWatch(this, movie)
         val intent = Intent(this, PlayerActivity::class.java).apply {
             putExtra(PlayerActivity.EXTRA_MOVIE_ID, movie.id)
             putExtra(PlayerActivity.EXTRA_MOVIE_TITLE, movie.title)

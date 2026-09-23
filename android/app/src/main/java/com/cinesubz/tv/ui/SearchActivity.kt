@@ -17,6 +17,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.cinesubz.tv.R
 import com.cinesubz.tv.adapter.MovieAdapter
+import com.cinesubz.tv.data.WatchHistoryManager
 import com.cinesubz.tv.model.Movie
 import com.cinesubz.tv.network.ApiClient
 import kotlinx.coroutines.Job
@@ -163,6 +164,7 @@ class SearchActivity : AppCompatActivity() {
     }
 
     private fun startPlayback(movie: Movie) {
+        WatchHistoryManager.recordWatch(this, movie)
         val intent = Intent(this, PlayerActivity::class.java).apply {
             putExtra(PlayerActivity.EXTRA_MOVIE_ID, movie.id)
             putExtra(PlayerActivity.EXTRA_MOVIE_TITLE, movie.title)

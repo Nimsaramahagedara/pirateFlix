@@ -1,4 +1,4 @@
-﻿package com.cinesubz.tv.update
+package com.cinesubz.tv.update
 
 import android.content.Context
 import android.content.Intent

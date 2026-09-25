@@ -57,6 +57,20 @@
             android:text="Server 2"
             android:textColor="@color/text_white"
             android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btnQuality"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_button_selector"
+            android:focusable="true"
+            android:paddingHorizontal="12dp"
+            android:text="Quality"
+            android:textColor="@color/text_white"
+            android:textSize="12sp"
+            android:visibility="gone"
+            tools:visibility="visible" />
     </LinearLayout>
 
     <!-- Buffering / Loading Indicator -->

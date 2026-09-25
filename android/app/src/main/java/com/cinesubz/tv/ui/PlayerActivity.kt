@@ -12,6 +12,7 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
@@ -23,6 +24,7 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
 import com.cinesubz.tv.AppConfig
 import com.cinesubz.tv.R
+import com.cinesubz.tv.model.StreamQuality
 import com.cinesubz.tv.network.ApiClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -47,12 +49,16 @@ class PlayerActivity : AppCompatActivity() {
     private lateinit var playerLoading: ProgressBar
     private lateinit var btnServer1: Button
     private lateinit var btnServer2: Button
+    private lateinit var btnQuality: Button
 
     private var exoPlayer: ExoPlayer? = null
     private var movieId: String = ""
     private var movieTitle: String = ""
     private var streamType: String = "mv"
     private var currentServer: String = "1"
+    private var availableQualities: List<StreamQuality> = emptyList()
+    private var currentQuality: StreamQuality? = null
+    private var currentHeaders: Map<String, String> = emptyMap()
     private val hasSeekedToSavedPos = AtomicBoolean(false)
 
     private val playbackPrefs by lazy {
@@ -85,6 +91,7 @@ class PlayerActivity : AppCompatActivity() {
         playerLoading = findViewById(R.id.playerLoading)
         btnServer1 = findViewById(R.id.btnServer1)
         btnServer2 = findViewById(R.id.btnServer2)
+        btnQuality = findViewById(R.id.btnQuality)
 
         tvPlayerTitle.text = movieTitle
         playerView.keepScreenOn = true
@@ -140,6 +147,10 @@ class PlayerActivity : AppCompatActivity() {
                 hasSeekedToSavedPos.set(false)
                 resolveAndPlayStream(currentServer)
             }
+        }
+
+        btnQuality.setOnClickListener {
+            showQualityDialog()
         }
     }
 
@@ -203,7 +214,23 @@ class PlayerActivity : AppCompatActivity() {
                 val response = ApiClient.service.getStream(movieId, server, streamType)
                 if (response.isSuccessful && response.body()?.streamUrl != null) {
                     val streamData = response.body()!!
-                    val playableUrl = resolvePlayableUrl(streamData.streamUrl!!)
+                    currentHeaders = streamData.headers
+
+                    val rawQualities = streamData.qualities ?: emptyList()
+                    val resolvedQualities = mutableListOf<StreamQuality>()
+                    for (q in rawQualities) {
+                        val resolvedUrl = resolvePlayableUrl(q.url)
+                        resolvedQualities.add(q.copy(url = resolvedUrl))
+                    }
+                    availableQualities = resolvedQualities
+
+                    val defaultQuality = availableQualities.firstOrNull { it.default }
+                        ?: availableQualities.firstOrNull()
+
+                    currentQuality = defaultQuality
+                    updateQualityButton()
+
+                    val playableUrl = defaultQuality?.url ?: resolvePlayableUrl(streamData.streamUrl!!)
                     initExoPlayer(playableUrl, streamData.headers)
                 } else {
                     val errorBody = response.errorBody()?.string() ?: ""
@@ -225,6 +252,50 @@ class PlayerActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    private fun updateQualityButton() {
+        if (availableQualities.isNotEmpty()) {
+            btnQuality.visibility = View.VISIBLE
+            val qName = currentQuality?.name ?: "Quality"
+            btnQuality.text = qName
+        } else {
+            btnQuality.visibility = View.GONE
+        }
+    }
+
+    private fun showQualityDialog() {
+        if (availableQualities.isEmpty()) {
+            Toast.makeText(this, "Only one quality available", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val qualityNames = availableQualities.map { it.name }.toTypedArray()
+        val currentIndex = availableQualities.indexOfFirst { it.url == currentQuality?.url }.let {
+            if (it >= 0) it else 0
+        }
+
+        AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+            .setTitle("Select Video Quality")
+            .setSingleChoiceItems(qualityNames, currentIndex) { dialog, which ->
+                val selected = availableQualities[which]
+                dialog.dismiss()
+                if (selected.url != currentQuality?.url) {
+                    switchQuality(selected)
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun switchQuality(quality: StreamQuality) {
+        savePlaybackPosition()
+        currentQuality = quality
+        updateQualityButton()
+        hasSeekedToSavedPos.set(false)
+        playerLoading.visibility = View.VISIBLE
+        Toast.makeText(this, "Switching to ${quality.name}", Toast.LENGTH_SHORT).show()
+        initExoPlayer(quality.url, currentHeaders)
     }
 
     private fun initExoPlayer(streamUrl: String, headers: Map<String, String>) {

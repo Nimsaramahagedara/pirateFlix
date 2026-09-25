@@ -16,11 +16,19 @@ import (
 )
 
 var (
-	reDefQuality  = regexp.MustCompile(`\{[^{}]*?"url"\s*:\s*["'](https?://[^"']+\.(?:mp4|m3u8)[^"']*)["'][^{}]*?"default"\s*:\s*true`)
-	reArtURL      = regexp.MustCompile(`url\s*:\s*["'](https?://[^"']+\.(?:mp4|m3u8)[^"']*)["']`)
-	reDirectMedia = regexp.MustCompile(`(https?://[^\s"'<>]+\.(?:mp4|m3u8)[^\s"'<>]*)`)
-	reIframeSrc   = regexp.MustCompile(`(?i)<iframe[^>]+src=['"]([^'"]+)['"]`)
+	reDefQuality   = regexp.MustCompile(`\{[^{}]*?"url"\s*:\s*["'](https?://[^"']+\.(?:mp4|m3u8)[^"']*)["'][^{}]*?"default"\s*:\s*true`)
+	reArtURL       = regexp.MustCompile(`url\s*:\s*["'](https?://[^"']+\.(?:mp4|m3u8)[^"']*)["']`)
+	reDirectMedia  = regexp.MustCompile(`(https?://[^\s"'<>]+\.(?:mp4|m3u8)[^\s"'<>]*)`)
+	reIframeSrc    = regexp.MustCompile(`(?i)<iframe[^>]+src=['"]([^'"]+)['"]`)
+	reAllQualities = regexp.MustCompile(`(?:const|var|let)\s+ALL_QUALITIES\s*=\s*(\[[^;]*?\]);`)
 )
+
+type rawQualityItem struct {
+	HTML    string `json:"html"`
+	Name    string `json:"name"`
+	URL     string `json:"url"`
+	Default bool   `json:"default"`
+}
 
 type zetaPlayerRawResponse struct {
 	EmbedURL string `json:"embed_url"`
@@ -54,69 +62,111 @@ func NewStreamResolver() *StreamResolver {
 	}
 }
 
-// extractDirectVideoURL parses player HTML pages (e.g. Artplayer / CS Player) to extract the actual video CDN URL.
-func (r *StreamResolver) extractDirectVideoURL(pageURL string) string {
+// extractDirectVideoInfo parses player HTML pages (e.g. Artplayer / CS Player) to extract the actual video CDN URL and any available quality options.
+func (r *StreamResolver) extractDirectVideoInfo(pageURL string) (string, []model.StreamQuality) {
 	lowerURL := strings.ToLower(pageURL)
 	isPlayerHost := strings.Contains(lowerURL, "player") || strings.Contains(lowerURL, "setwenna") || strings.Contains(lowerURL, "evostream") || strings.Contains(lowerURL, "csplayer")
 	if !isPlayerHost && (strings.Contains(lowerURL, "terracloud") || strings.Contains(lowerURL, "play=true") || strings.Contains(lowerURL, "skylines")) {
-		return pageURL
+		return pageURL, []model.StreamQuality{{Name: "HD", URL: pageURL, Default: true}}
 	}
 
 	req, err := http.NewRequest("GET", pageURL, nil)
 	if err != nil {
-		return pageURL
+		return pageURL, nil
 	}
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 	req.Header.Set("Referer", "https://cinesubz.co/")
 
 	resp, err := r.client.Do(req)
 	if err != nil {
-		return pageURL
+		return pageURL, nil
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return pageURL
+		return pageURL, nil
 	}
 
 	contentType := strings.ToLower(resp.Header.Get("Content-Type"))
 	if strings.Contains(contentType, "video/") || strings.Contains(contentType, "mpegurl") {
-		return pageURL
+		return pageURL, []model.StreamQuality{{Name: "HD", URL: pageURL, Default: true}}
 	}
 
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 512*1024))
 	if err != nil {
-		return pageURL
+		return pageURL, nil
 	}
 	html := string(body)
 
-	// 1. Check for "default":true in ALL_QUALITIES array
+	var qualities []model.StreamQuality
+	var defaultStreamURL string
+
+	// 1. Check for ALL_QUALITIES array
+	if m := reAllQualities.FindStringSubmatch(html); len(m) > 1 {
+		var rawQualities []rawQualityItem
+		if err := json.Unmarshal([]byte(m[1]), &rawQualities); err == nil && len(rawQualities) > 0 {
+			for _, q := range rawQualities {
+				name := strings.TrimSpace(q.HTML)
+				if name == "" {
+					name = strings.TrimSpace(q.Name)
+				}
+				if name == "" {
+					name = "Stream"
+				}
+				if q.URL != "" {
+					qualities = append(qualities, model.StreamQuality{
+						Name:    name,
+						URL:     q.URL,
+						Default: q.Default,
+					})
+					if q.Default || defaultStreamURL == "" {
+						defaultStreamURL = q.URL
+					}
+				}
+			}
+		}
+	}
+
+	if defaultStreamURL != "" {
+		return defaultStreamURL, qualities
+	}
+
+	// 2. Check for "default":true in individual quality objects
 	if m := reDefQuality.FindStringSubmatch(html); len(m) > 1 {
-		return m[1]
+		streamURL := m[1]
+		return streamURL, []model.StreamQuality{{Name: "HD", URL: streamURL, Default: true}}
 	}
 
-	// 2. Check for Artplayer main video url: '...'
+	// 3. Check for Artplayer main video url: '...'
 	if m := reArtURL.FindStringSubmatch(html); len(m) > 1 {
-		return m[1]
+		streamURL := m[1]
+		return streamURL, []model.StreamQuality{{Name: "HD", URL: streamURL, Default: true}}
 	}
 
-	// 3. Fallback to any direct media link
+	// 4. Fallback to any direct media link
 	if m := reDirectMedia.FindStringSubmatch(html); len(m) > 1 {
-		return m[1]
+		streamURL := m[1]
+		return streamURL, []model.StreamQuality{{Name: "HD", URL: streamURL, Default: true}}
 	}
 
-	// 4. Check for nested iframe src
+	// 5. Check for nested iframe src
 	if m := reIframeSrc.FindStringSubmatch(html); len(m) > 1 {
 		nestedURL := m[1]
 		if strings.HasPrefix(nestedURL, "//") {
 			nestedURL = "https:" + nestedURL
 		}
 		if nestedURL != pageURL {
-			return r.extractDirectVideoURL(nestedURL)
+			return r.extractDirectVideoInfo(nestedURL)
 		}
 	}
 
-	return pageURL
+	return pageURL, nil
+}
+
+// extractDirectVideoURL maintains backwards compatibility by returning just the primary stream URL.
+func (r *StreamResolver) extractDirectVideoURL(pageURL string) string {
+	url, _ := r.extractDirectVideoInfo(pageURL)
+	return url
 }
 
 // ResolveStream queries the ZetaPlayer API / admin-ajax and extracts the raw playable video URL for ExoPlayer.
@@ -178,7 +228,7 @@ func (r *StreamResolver) ResolveStream(postID string, serverNum string, streamTy
 		}
 
 		if embedURL != "" {
-			directVideoURL := r.extractDirectVideoURL(embedURL)
+			directVideoURL, qualities := r.extractDirectVideoInfo(embedURL)
 			stType := "mp4"
 			if strings.Contains(directVideoURL, ".m3u8") {
 				stType = "hls"
@@ -194,6 +244,7 @@ func (r *StreamResolver) ResolveStream(postID string, serverNum string, streamTy
 					"Referer":    "https://cinesubz.co",
 					"User-Agent": "Mozilla/5.0 (Linux; Android TV)",
 				},
+				Qualities: qualities,
 			}, nil
 		}
 	}
@@ -278,7 +329,7 @@ func (r *StreamResolver) resolveViaAdminAjax(postID string, serverNum string, ta
 			}
 		}
 
-		directVideoURL := r.extractDirectVideoURL(embedURL)
+		directVideoURL, qualities := r.extractDirectVideoInfo(embedURL)
 		stType := "mp4"
 		if strings.Contains(directVideoURL, ".m3u8") {
 			stType = "hls"
@@ -294,6 +345,7 @@ func (r *StreamResolver) resolveViaAdminAjax(postID string, serverNum string, ta
 				"Referer":    "https://cinesubz.co",
 				"User-Agent": "Mozilla/5.0 (Linux; Android TV)",
 			},
+			Qualities: qualities,
 		}, nil
 	}
 

@@ -26,6 +26,13 @@ type Movie struct {
 	IndexedAt   time.Time      `json:"indexed_at"`
 }
 
+// StreamQuality represents an available resolution/quality for a stream.
+type StreamQuality struct {
+	Name    string `json:"name"`
+	URL     string `json:"url"`
+	Default bool   `json:"default"`
+}
+
 // StreamResponse provides the resolved direct streaming URL and player headers.
 type StreamResponse struct {
 	PostID    string            `json:"post_id"`
@@ -34,6 +41,7 @@ type StreamResponse struct {
 	EmbedURL  string            `json:"embed_url,omitempty"`
 	Type      string            `json:"type"` // "mp4", "iframe", etc.
 	Headers   map[string]string `json:"headers"`
+	Qualities []StreamQuality   `json:"qualities,omitempty"`
 	Error     string            `json:"error,omitempty"`
 }
 

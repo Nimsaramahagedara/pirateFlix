@@ -21,7 +21,7 @@ var (
 	reYear         = regexp.MustCompile(`\((\d{4})\)`)
 	reIMDb         = regexp.MustCompile(`IMDbID\s+([a-zA-Z0-9]+)`)
 	reQuality      = regexp.MustCompile(`(?s)<span\s+class=["']mli-quality["']>([^<]+)</span>`)
-	reGenresPage   = regexp.MustCompile(`href=["']https://cinesubz\.lk/genre/([^/'"]+)/["']`)
+	reGenresPage   = regexp.MustCompile(`href=["']https://cinesubz\.(?:co|lk|net)/genre/([^/'"]+)/["']`)
 	reDescMeta     = regexp.MustCompile(`(?s)<meta\s+property=["']og:description["']\s+content=["']([^"']+)["']`)
 	reTitleMeta    = regexp.MustCompile(`(?is)<meta\s+property=['"]og:title['"]\s+content=['"]([^'"]+)['"]`)
 	reImageMeta    = regexp.MustCompile(`(?is)<meta\s+property=['"]og:image['"]\s+content=['"]([^'"]+)['"]`)
@@ -54,7 +54,7 @@ func (s *Scraper) get(targetURL string) (string, error) {
 		return "", err
 	}
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-	req.Header.Set("Referer", "https://cinesubz.lk/")
+	req.Header.Set("Referer", "https://cinesubz.co/")
 
 	resp, err := s.client.Do(req)
 	if err != nil {
@@ -74,11 +74,11 @@ func (s *Scraper) get(targetURL string) (string, error) {
 	return string(body), nil
 }
 
-// ScrapeCatalogPage scrapes movies from https://cinesubz.lk/movies/page/{page}/
+// ScrapeCatalogPage scrapes movies from https://cinesubz.co/movies/page/{page}/
 func (s *Scraper) ScrapeCatalogPage(page int) ([]model.Movie, error) {
-	pageURL := "https://cinesubz.lk/movies/"
+	pageURL := "https://cinesubz.co/movies/"
 	if page > 1 {
-		pageURL = fmt.Sprintf("https://cinesubz.lk/movies/page/%d/", page)
+		pageURL = fmt.Sprintf("https://cinesubz.co/movies/page/%d/", page)
 	}
 
 	html, err := s.get(pageURL)
@@ -91,9 +91,9 @@ func (s *Scraper) ScrapeCatalogPage(page int) ([]model.Movie, error) {
 
 // ScrapeTrendingPage queries CineSubz trending movies
 func (s *Scraper) ScrapeTrendingPage(page int) ([]model.Movie, error) {
-	pageURL := "https://cinesubz.lk/trending/"
+	pageURL := "https://cinesubz.co/trending/"
 	if page > 1 {
-		pageURL = fmt.Sprintf("https://cinesubz.lk/trending/page/%d/", page)
+		pageURL = fmt.Sprintf("https://cinesubz.co/trending/page/%d/", page)
 	}
 
 	content, err := s.get(pageURL)
@@ -106,9 +106,9 @@ func (s *Scraper) ScrapeTrendingPage(page int) ([]model.Movie, error) {
 
 // ScrapeTVShowsPage queries CineSubz TV shows & series
 func (s *Scraper) ScrapeTVShowsPage(page int) ([]model.Movie, error) {
-	pageURL := "https://cinesubz.lk/tvshows/"
+	pageURL := "https://cinesubz.co/tvshows/"
 	if page > 1 {
-		pageURL = fmt.Sprintf("https://cinesubz.lk/tvshows/page/%d/", page)
+		pageURL = fmt.Sprintf("https://cinesubz.co/tvshows/page/%d/", page)
 	}
 
 	content, err := s.get(pageURL)
@@ -128,7 +128,7 @@ func (s *Scraper) ScrapeTVShowsPage(page int) ([]model.Movie, error) {
 
 // ScrapeSearch queries CineSubz search and parses result cards
 func (s *Scraper) ScrapeSearch(query string) ([]model.Movie, error) {
-	searchURL := fmt.Sprintf("https://cinesubz.lk/?s=%s", url.QueryEscape(query))
+	searchURL := fmt.Sprintf("https://cinesubz.co/?s=%s", url.QueryEscape(query))
 	html, err := s.get(searchURL)
 	if err != nil {
 		return nil, err

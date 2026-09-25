@@ -41,7 +41,8 @@ func NewStreamResolver() *StreamResolver {
 
 // extractDirectVideoURL parses player HTML pages (e.g. Artplayer / CS Player) to extract the actual video CDN URL.
 func (r *StreamResolver) extractDirectVideoURL(pageURL string) string {
-	if strings.Contains(pageURL, "skylines") && strings.Contains(pageURL, ".mp4") {
+	lowerURL := strings.ToLower(pageURL)
+	if strings.Contains(lowerURL, ".mp4") || strings.Contains(lowerURL, ".m3u8") || strings.Contains(lowerURL, ".mkv") || strings.Contains(pageURL, "skylines") {
 		return pageURL
 	}
 
@@ -50,7 +51,7 @@ func (r *StreamResolver) extractDirectVideoURL(pageURL string) string {
 		return pageURL
 	}
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-	req.Header.Set("Referer", "https://cinesubz.lk/")
+	req.Header.Set("Referer", "https://cinesubz.co/")
 
 	resp, err := r.client.Do(req)
 	if err != nil {
@@ -101,7 +102,7 @@ func (r *StreamResolver) ResolveStream(postID string, serverNum string, streamTy
 	}
 
 	// 2. Otherwise try wp-json zetaplayer endpoint for movies
-	domains := []string{"https://cinesubz.lk", "https://cinesubz.net"}
+	domains := []string{"https://cinesubz.co", "https://cinesubz.net", "https://cinesubz.lk"}
 	var lastErr error
 
 	for _, domain := range domains {
@@ -113,7 +114,7 @@ func (r *StreamResolver) ResolveStream(postID string, serverNum string, streamTy
 		}
 
 		req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-		req.Header.Set("Referer", "https://cinesubz.lk/")
+		req.Header.Set("Referer", domain+"/")
 
 		resp, err := r.client.Do(req)
 		if err != nil {
@@ -158,7 +159,7 @@ func (r *StreamResolver) ResolveStream(postID string, serverNum string, streamTy
 				EmbedURL:  embedURL,
 				Type:      stType,
 				Headers: map[string]string{
-					"Referer":    "https://cinesubz.lk",
+					"Referer":    "https://cinesubz.co",
 					"User-Agent": "Mozilla/5.0 (Linux; Android TV)",
 				},
 			}, nil
@@ -182,7 +183,7 @@ func (r *StreamResolver) ResolveStream(postID string, serverNum string, streamTy
 }
 
 func (r *StreamResolver) resolveViaAdminAjax(postID string, serverNum string, targetType string) (*model.StreamResponse, error) {
-	domains := []string{"https://cinesubz.net", "https://cinesubz.lk"}
+	domains := []string{"https://cinesubz.co", "https://cinesubz.net", "https://cinesubz.lk"}
 	var lastErr error
 
 	for _, domain := range domains {
@@ -258,7 +259,7 @@ func (r *StreamResolver) resolveViaAdminAjax(postID string, serverNum string, ta
 			EmbedURL:  embedURL,
 			Type:      stType,
 			Headers: map[string]string{
-				"Referer":    "https://cinesubz.lk",
+				"Referer":    "https://cinesubz.co",
 				"User-Agent": "Mozilla/5.0 (Linux; Android TV)",
 			},
 		}, nil

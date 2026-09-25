@@ -147,10 +147,11 @@ class PlayerActivity : AppCompatActivity() {
      * Resolves the raw playable video URL (e.g. from CDN) if the backend returned an Artplayer/HTML wrapper.
      */
     private suspend fun resolvePlayableUrl(rawUrl: String): String = withContext(Dispatchers.IO) {
-        if (rawUrl.contains("skylines") || rawUrl.contains(".m3u8")) {
+        val lower = rawUrl.lowercase()
+        if (lower.contains(".mp4") || lower.contains(".m3u8") || lower.contains(".mkv") || lower.contains("skylines")) {
             return@withContext rawUrl
         }
-        if (rawUrl.contains("csplayer") || rawUrl.contains("player") || rawUrl.contains("/mv/")) {
+        if (rawUrl.contains("csplayer") || rawUrl.contains("/mv/") || rawUrl.contains("/player/")) {
             try {
                 val client = OkHttpClient.Builder()
                     .connectTimeout(10, TimeUnit.SECONDS)
@@ -160,7 +161,7 @@ class PlayerActivity : AppCompatActivity() {
                 val request = Request.Builder()
                     .url(rawUrl)
                     .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-                    .header("Referer", "https://cinesubz.lk/")
+                    .header("Referer", "https://cinesubz.co/")
                     .build()
                 val response = client.newCall(request).execute()
                 val body = response.body?.string() ?: ""

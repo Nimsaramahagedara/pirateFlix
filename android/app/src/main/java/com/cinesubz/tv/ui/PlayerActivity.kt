@@ -148,10 +148,11 @@ class PlayerActivity : AppCompatActivity() {
      */
     private suspend fun resolvePlayableUrl(rawUrl: String): String = withContext(Dispatchers.IO) {
         val lower = rawUrl.lowercase()
-        if (lower.contains(".mp4") || lower.contains(".m3u8") || lower.contains(".mkv") || lower.contains("skylines")) {
+        val isPlayerHost = lower.contains("player") || lower.contains("setwenna") || lower.contains("evostream") || lower.contains("csplayer")
+        if (!isPlayerHost && (lower.contains("terracloud") || lower.contains("play=true") || lower.contains("skylines") || lower.contains(".m3u8"))) {
             return@withContext rawUrl
         }
-        if (rawUrl.contains("csplayer") || rawUrl.contains("/mv/") || rawUrl.contains("/player/")) {
+        if (isPlayerHost || lower.contains("/mv/") || lower.contains("/player/") || lower.contains("embed")) {
             try {
                 val client = OkHttpClient.Builder()
                     .connectTimeout(10, TimeUnit.SECONDS)

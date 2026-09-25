@@ -1,9 +1,11 @@
 package resolver
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -32,9 +34,22 @@ type StreamResolver struct {
 }
 
 func NewStreamResolver() *StreamResolver {
+	transport := &http.Transport{
+		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			var d net.Dialer
+			return d.DialContext(ctx, "tcp4", addr)
+		},
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   5 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
+
 	return &StreamResolver{
 		client: &http.Client{
-			Timeout: 10 * time.Second,
+			Transport: transport,
+			Timeout:   10 * time.Second,
 		},
 	}
 }
@@ -42,7 +57,8 @@ func NewStreamResolver() *StreamResolver {
 // extractDirectVideoURL parses player HTML pages (e.g. Artplayer / CS Player) to extract the actual video CDN URL.
 func (r *StreamResolver) extractDirectVideoURL(pageURL string) string {
 	lowerURL := strings.ToLower(pageURL)
-	if strings.Contains(lowerURL, ".mp4") || strings.Contains(lowerURL, ".m3u8") || strings.Contains(lowerURL, ".mkv") || strings.Contains(pageURL, "skylines") {
+	isPlayerHost := strings.Contains(lowerURL, "player") || strings.Contains(lowerURL, "setwenna") || strings.Contains(lowerURL, "evostream") || strings.Contains(lowerURL, "csplayer")
+	if !isPlayerHost && (strings.Contains(lowerURL, "terracloud") || strings.Contains(lowerURL, "play=true") || strings.Contains(lowerURL, "skylines")) {
 		return pageURL
 	}
 
@@ -63,7 +79,12 @@ func (r *StreamResolver) extractDirectVideoURL(pageURL string) string {
 		return pageURL
 	}
 
-	body, err := io.ReadAll(resp.Body)
+	contentType := strings.ToLower(resp.Header.Get("Content-Type"))
+	if strings.Contains(contentType, "video/") || strings.Contains(contentType, "mpegurl") {
+		return pageURL
+	}
+
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 512*1024))
 	if err != nil {
 		return pageURL
 	}
@@ -82,6 +103,17 @@ func (r *StreamResolver) extractDirectVideoURL(pageURL string) string {
 	// 3. Fallback to any direct media link
 	if m := reDirectMedia.FindStringSubmatch(html); len(m) > 1 {
 		return m[1]
+	}
+
+	// 4. Check for nested iframe src
+	if m := reIframeSrc.FindStringSubmatch(html); len(m) > 1 {
+		nestedURL := m[1]
+		if strings.HasPrefix(nestedURL, "//") {
+			nestedURL = "https:" + nestedURL
+		}
+		if nestedURL != pageURL {
+			return r.extractDirectVideoURL(nestedURL)
+		}
 	}
 
 	return pageURL

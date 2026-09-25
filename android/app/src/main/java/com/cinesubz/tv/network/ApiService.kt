@@ -33,6 +33,7 @@ interface ApiService {
 
     @GET("series/{id}")
     suspend fun getSeriesDetails(
-        @Path("id") seriesId: String
+        @Path("id") seriesId: String,
+        @Query("url") pageUrl: String? = null
     ): Response<SeriesDetail>
 }

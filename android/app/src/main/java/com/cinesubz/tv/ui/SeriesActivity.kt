@@ -34,6 +34,7 @@ class SeriesActivity : AppCompatActivity() {
         const val EXTRA_SERIES_TITLE = "extra_series_title"
         const val EXTRA_POSTER = "extra_poster"
         const val EXTRA_BACKDROP = "extra_backdrop"
+        const val EXTRA_PAGE_URL = "extra_page_url"
     }
 
     private lateinit var ivSeriesBackdrop: ImageView
@@ -52,6 +53,7 @@ class SeriesActivity : AppCompatActivity() {
     private lateinit var episodeAdapter: EpisodeAdapter
     private var seriesId: String = ""
     private var seriesTitle: String = ""
+    private var seriesPageUrl: String? = null
     private var currentSeriesDetail: SeriesDetail? = null
     private var selectedSeason: Season? = null
     private val seasonButtons = mutableListOf<Button>()
@@ -62,6 +64,7 @@ class SeriesActivity : AppCompatActivity() {
 
         seriesId = intent.getStringExtra(EXTRA_SERIES_ID) ?: ""
         seriesTitle = intent.getStringExtra(EXTRA_SERIES_TITLE) ?: "TV Series"
+        seriesPageUrl = intent.getStringExtra(EXTRA_PAGE_URL)
         val initialBackdrop = intent.getStringExtra(EXTRA_BACKDROP) ?: intent.getStringExtra(EXTRA_POSTER)
 
         initViews()
@@ -74,7 +77,7 @@ class SeriesActivity : AppCompatActivity() {
             }
         }
 
-        loadSeriesDetails(seriesId)
+        loadSeriesDetails(seriesId, seriesPageUrl)
     }
 
     private fun initViews() {
@@ -98,13 +101,13 @@ class SeriesActivity : AppCompatActivity() {
         rvEpisodes.adapter = episodeAdapter
     }
 
-    private fun loadSeriesDetails(id: String) {
+    private fun loadSeriesDetails(id: String, pageUrl: String? = null) {
         progressBar.visibility = View.VISIBLE
         tvError.visibility = View.GONE
 
         lifecycleScope.launch {
             try {
-                val response = ApiClient.service.getSeriesDetails(id)
+                val response = ApiClient.service.getSeriesDetails(id, pageUrl)
                 progressBar.visibility = View.GONE
 
                 if (response.isSuccessful && response.body() != null) {
@@ -221,9 +224,12 @@ class SeriesActivity : AppCompatActivity() {
         val seasonName = selectedSeason?.title ?: "Season"
         val epTitle = "$seriesName - $seasonName E${episode.episodeNumber}: ${episode.title}"
 
+        val finalPageUrl = currentSeriesDetail?.pageUrl?.takeIf { it.isNotBlank() } ?: seriesPageUrl
+        val finalSeriesId = currentSeriesDetail?.id?.takeIf { it.isNotBlank() } ?: seriesId
+
         // Record the TV series itself (not the episode) in Continue Watching
         val seriesMovie = Movie(
-            id = currentSeriesDetail?.id ?: seriesId,
+            id = finalSeriesId,
             title = seriesName,
             poster = currentSeriesDetail?.poster ?: intent.getStringExtra(EXTRA_POSTER),
             backdrop = currentSeriesDetail?.backdrop ?: intent.getStringExtra(EXTRA_BACKDROP),
@@ -232,7 +238,7 @@ class SeriesActivity : AppCompatActivity() {
             imdb = currentSeriesDetail?.imdb,
             rating = currentSeriesDetail?.rating,
             genres = currentSeriesDetail?.genres ?: emptyList(),
-            pageUrl = currentSeriesDetail?.pageUrl,
+            pageUrl = finalPageUrl,
             isTvShow = true
         )
         WatchHistoryManager.recordWatch(this, seriesMovie)

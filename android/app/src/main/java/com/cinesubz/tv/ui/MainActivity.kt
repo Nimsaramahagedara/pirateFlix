@@ -202,6 +202,7 @@ class MainActivity : AppCompatActivity() {
                 putExtra(SeriesActivity.EXTRA_SERIES_TITLE, movie.title)
                 putExtra(SeriesActivity.EXTRA_POSTER, movie.poster)
                 putExtra(SeriesActivity.EXTRA_BACKDROP, movie.backdrop)
+                putExtra(SeriesActivity.EXTRA_PAGE_URL, movie.pageUrl)
             }
             startActivity(intent)
         } else {

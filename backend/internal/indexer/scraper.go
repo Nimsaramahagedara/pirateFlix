@@ -27,6 +27,8 @@ var (
 	reDescMeta     = regexp.MustCompile(`(?s)<meta\s+property=["']og:description["']\s+content=["']([^"']+)["']`)
 	reTitleMeta    = regexp.MustCompile(`(?is)<meta\s+property=['"]og:title['"]\s+content=['"]([^'"]+)['"]`)
 	reImageMeta    = regexp.MustCompile(`(?is)<meta\s+property=['"]og:image['"]\s+content=['"]([^'"]+)['"]`)
+	reOgURL        = regexp.MustCompile(`(?is)<meta\s+property=['"]og:url['"]\s+content=['"]([^'"]+)['"]`)
+	reCanonical    = regexp.MustCompile(`(?is)<link\s+[^>]*rel=['"]canonical['"][^>]*href=['"]([^'"]+)['"]`)
 	rePostID       = regexp.MustCompile(`data-post=['"](\d+)['"]|id=['"]item-(\d+)['"]`)
 	reSeasonBlocks = regexp.MustCompile(`(?is)<ul[^>]+id=['"]season-listep-(\d+)['"][^>]*>(.*?)</ul>`)
 	reEpisodeItem  = regexp.MustCompile(`(?is)<li[^>]*>(.*?)</li>`)
@@ -288,6 +290,12 @@ func (s *Scraper) ScrapeSeriesDetails(pageURL string) (*model.SeriesDetail, erro
 		PageURL:   pageURL,
 		Seasons:   make([]model.Season, 0),
 		UpdatedAt: time.Now(),
+	}
+
+	if m := reOgURL.FindStringSubmatch(pageHTML); len(m) > 1 && m[1] != "" {
+		detail.PageURL = m[1]
+	} else if m := reCanonical.FindStringSubmatch(pageHTML); len(m) > 1 && m[1] != "" {
+		detail.PageURL = m[1]
 	}
 
 	if m := reTitleMeta.FindStringSubmatch(pageHTML); len(m) > 1 {

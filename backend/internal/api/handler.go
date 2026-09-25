@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -143,16 +144,26 @@ func (h *Handler) HandleSeriesByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	pageURL := strings.TrimSpace(r.URL.Query().Get("url"))
+
 	// 1. Check cache first
 	if series, found := h.store.GetSeries(id); found {
 		writeJSON(w, http.StatusOK, series)
 		return
 	}
 
-	// 2. Lookup page URL from store
-	var pageURL string
-	if movie, found := h.store.GetByID(id); found && movie.PageURL != "" {
-		pageURL = movie.PageURL
+	// 2. Lookup page URL from store if not provided in query
+	if pageURL == "" {
+		if movie, found := h.store.GetByID(id); found && movie.PageURL != "" {
+			pageURL = movie.PageURL
+		}
+	}
+
+	// 3. Fallback: If pageURL is still empty and id is numeric (e.g. WordPress post ID), use shortlink
+	if pageURL == "" {
+		if _, err := strconv.Atoi(id); err == nil {
+			pageURL = fmt.Sprintf("https://cinesubz.co/?p=%s", id)
+		}
 	}
 
 	if pageURL == "" {
@@ -160,7 +171,7 @@ func (h *Handler) HandleSeriesByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 3. Scrape series details
+	// 4. Scrape series details
 	series, err := h.scraper.ScrapeSeriesDetails(pageURL)
 	if err != nil {
 		log.Printf("Error scraping series details for %s (%s): %v", id, pageURL, err)
@@ -175,8 +186,33 @@ func (h *Handler) HandleSeriesByID(w http.ResponseWriter, r *http.Request) {
 		series.ID = id
 	}
 
-	// Cache it
+	// Cache under both the requested id and the series' own ID
 	h.store.SetSeries(id, series)
+	if series.ID != id {
+		h.store.SetSeries(series.ID, series)
+	}
+
+	// Also ensure series is indexed in movie catalog
+	movieObj := &model.Movie{
+		ID:          series.ID,
+		Title:       series.Title,
+		Poster:      series.Poster,
+		Backdrop:    series.Backdrop,
+		Description: series.Description,
+		Year:        series.Year,
+		IMDb:        series.IMDb,
+		Rating:      series.Rating,
+		Genres:      series.Genres,
+		PageURL:     series.PageURL,
+		IsTVShow:    true,
+	}
+	h.store.Upsert(movieObj)
+	if id != series.ID {
+		idMovieObj := *movieObj
+		idMovieObj.ID = id
+		h.store.Upsert(&idMovieObj)
+	}
+
 	writeJSON(w, http.StatusOK, series)
 }
 

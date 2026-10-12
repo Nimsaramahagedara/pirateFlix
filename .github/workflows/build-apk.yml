@@ -48,13 +48,14 @@ jobs:
         working-directory: ./android
         run: |
           mkdir -p output
-          cp app/build/outputs/apk/release/*.apk output/nimsaratv-release.apk
+          cp app/build/outputs/apk/release/*.apk output/pirateflix-release.apk
+          cp output/pirateflix-release.apk output/nimsaratv-release.apk
 
       - name: Upload APK as Build Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: nimsaratv-release-apk
-          path: android/output/nimsaratv-release.apk
+          name: pirateflix-release-apk
+          path: android/output/pirateflix-release.apk
           retention-days: 30
 
       - name: Extract App Version
@@ -70,7 +71,9 @@ jobs:
         with:
           tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('v{0}', env.VERSION) }}
           name: Release v${{ env.VERSION }}
-          files: android/output/nimsaratv-release.apk
+          files: |
+            android/output/pirateflix-release.apk
+            android/output/nimsaratv-release.apk
           draft: false
           prerelease: false
           generate_release_notes: true

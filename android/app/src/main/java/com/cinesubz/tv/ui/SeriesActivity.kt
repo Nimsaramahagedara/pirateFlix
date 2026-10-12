@@ -134,7 +134,7 @@ class SeriesActivity : AppCompatActivity() {
     private fun bindSeriesDetails(detail: SeriesDetail) {
         tvSeriesTitle.text = detail.title
         tvSeriesYear.text = detail.year ?: "2026"
-        tvSeriesSynopsis.text = detail.description ?: "Watch this TV series on NimsaraTV."
+        tvSeriesSynopsis.text = detail.description ?: "Watch this TV series on PirateFlix."
 
         if (!detail.imdb.isNullOrEmpty()) {
             tvSeriesIMDb.text = "IMDb ${detail.imdb}"

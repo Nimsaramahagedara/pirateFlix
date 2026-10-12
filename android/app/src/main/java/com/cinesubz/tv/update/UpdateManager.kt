@@ -59,7 +59,7 @@ class UpdateManager(private val context: Context) {
         val request = Request.Builder()
             .url(RELEASES_API_URL)
             .header("Accept", "application/vnd.github.v3+json")
-            .header("User-Agent", "NimsaraTV-AndroidApp")
+            .header("User-Agent", "PirateFlix-AndroidApp")
             .build()
 
         val currentVersion = BuildConfig.VERSION_NAME
@@ -103,7 +103,7 @@ class UpdateManager(private val context: Context) {
     ): File = withContext(Dispatchers.IO) {
         val request = Request.Builder()
             .url(downloadUrl)
-            .header("User-Agent", "NimsaraTV-AndroidApp")
+            .header("User-Agent", "PirateFlix-AndroidApp")
             .build()
 
         httpClient.newCall(request).execute().use { response ->
@@ -113,7 +113,7 @@ class UpdateManager(private val context: Context) {
 
             val body = response.body ?: throw Exception("Response body is empty")
             val totalBytes = body.contentLength()
-            val outputFile = File(context.cacheDir, "nimsaratv_update.apk")
+            val outputFile = File(context.cacheDir, "pirateflix_update.apk")
             if (outputFile.exists()) {
                 outputFile.delete()
             }

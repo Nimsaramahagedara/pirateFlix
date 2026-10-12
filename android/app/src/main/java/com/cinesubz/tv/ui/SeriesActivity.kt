@@ -95,10 +95,15 @@ class SeriesActivity : AppCompatActivity() {
         tvError = findViewById(R.id.tvError)
 
         rvEpisodes.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        rvEpisodes.isNestedScrollingEnabled = false
         episodeAdapter = EpisodeAdapter(emptyList()) { episode ->
             playEpisode(episode)
         }
         rvEpisodes.adapter = episodeAdapter
+
+        findViewById<Button>(R.id.btnBack)?.setOnClickListener {
+            finish()
+        }
     }
 
     private fun loadSeriesDetails(id: String, pageUrl: String? = null) {
